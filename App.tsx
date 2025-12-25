@@ -15,6 +15,10 @@ import CourseCommunity from './pages/CourseCommunity';
 import QuizPractice from './pages/QuizPractice'; // <-- IMPORT NEW PAGE
 import { useAuth } from './contexts/AuthContext';
 import { Spinner } from './components/ui';
+import InterviewQuiz from './pages/InterviewQuiz';
+import SudokuGame from './pages/SudokuGame';
+import ZipGame from './pages/ZipGame';
+import SpeedMathGame from './pages/SpeedMathGame';
 
 
 const AuthLayout: React.FC = () => (
@@ -75,7 +79,12 @@ const App: React.FC = () => {
             <Route path="notes" element={<Notes />} />
             <Route path="community/:courseId" element={<CourseCommunity />} />
             <Route path="quizzes" element={<QuizPractice />} /> {/* <-- ADD ROUTE */}
+            <Route path="interview" element={<InterviewQuiz />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="sudoku" element={<SudokuGame />} />
+            <Route path="zip" element={<ZipGame />} />
+            <Route path="speed-math" element={<SpeedMathGame />} />
+
           </Route>
         ) : (
           <Route element={<AuthLayout />}>
