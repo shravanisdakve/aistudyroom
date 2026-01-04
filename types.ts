@@ -18,16 +18,16 @@ export interface Quiz {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'model';
-  parts: { text: string }[];
-  // For group chat simulation
-  user?: { displayName:string | null, email: string | null };
-  timestamp?: number;
-  attachment?: {
-      name: string;
-      type: string;
-      size: number;
-  }
+    role: 'user' | 'model';
+    parts: { text: string }[];
+    // For group chat simulation
+    user?: { displayName: string | null, email: string | null };
+    timestamp?: number;
+    attachment?: {
+        name: string;
+        type: string;
+        size: number;
+    }
 }
 
 export interface Course {
@@ -45,7 +45,7 @@ export interface Mood {
 
 
 export interface StudyRoom {
-    id:string;
+    id: string;
     name: string;
     courseId: string;
     maxUsers: number;
@@ -76,12 +76,20 @@ export interface Assignment {
 }
 
 export interface Note {
-  id: string;
-  courseId: string;
-  title: string;
-  content?: string; // For text notes
-  fileUrl?: string; // For file notes
-  fileName?: string;
-  fileType?: string;
-  createdAt: number;
+    id: string;
+    courseId: string;
+    title: string;
+    content?: string; // For text notes
+    fileUrl?: string; // For file notes
+    fileName?: string;
+    fileType?: string;
+    createdAt: number;
+}
+
+export interface TopicMastery {
+    userId: string;
+    topic: string; // e.g., "Calculus - Derivatives"
+    score: number; // 0 to 100
+    confidence: number; // 0 to 1 (how sure the AI is of this score)
+    lastUpdated: number;
 }

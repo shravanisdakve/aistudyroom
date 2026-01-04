@@ -23,17 +23,6 @@ router.get('/course/:courseId', async (req, res) => {
     }
 });
 
-// GET Single Assignment
-router.get('/:id', async (req, res) => {
-    if (req.params.id === 'student' || req.params.id === 'teacher') return; // conflict guard
-    try {
-        const assignment = await Assignment.findById(req.params.id);
-        res.json(assignment);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // GET Pending/Active Assignments for a Student (By ID)
 // This logic assumes the student is part of courses linked by that ID or just fetches all for now.
 // For a real system, we'd filter by the student's enrolled courses.
@@ -89,6 +78,19 @@ router.get('/teacher/:teacherId', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// GET Single Assignment
+router.get('/:id', async (req, res) => {
+    if (req.params.id === 'student' || req.params.id === 'teacher') return; // conflict guard
+    try {
+        const assignment = await Assignment.findById(req.params.id);
+        res.json(assignment);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 
 // SUBMIT Assignment (Student)
 router.post('/submit', async (req, res) => {

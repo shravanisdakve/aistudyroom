@@ -1,10 +1,4 @@
-export interface Mastery {
-    userId: string;
-    topic: string; // e.g., "Calculus - Derivatives"
-    score: number; // 0 to 100
-    confidence: number; // 0 to 1 (how sure the AI is of this score)
-    lastUpdated: number;
-}
+
 
 import { type TopicMastery } from '../types';
 import axios from 'axios';
@@ -25,7 +19,7 @@ const getUserId = () => {
     return null;
 }
 
-export const getUserMastery = async (userId: string): Promise<Mastery[]> => {
+export const getUserMastery = async (userId: string): Promise<TopicMastery[]> => {
     const effectiveUserId = userId || getUserId();
     if (!effectiveUserId) return [];
 
