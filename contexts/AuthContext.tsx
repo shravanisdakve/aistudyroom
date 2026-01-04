@@ -1,4 +1,12 @@
-import React, { useContext, useState, useEffect, createContext, ReactNode } from 'react';
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  createContext,
+  ReactNode,
+} from "react";
+
+/* ===================== TYPES ===================== */
 
 interface User {
   uid: string;
@@ -10,82 +18,127 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  signup: (displayName: string, email: string, university: string, password: string) => Promise<void>;
+  signup: (
+    displayName: string,
+    email: string,
+    university: string,
+    password: string
+  ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
 }
 
+/* ===================== CONTEXT ===================== */
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+/* ===================== PROVIDER ===================== */
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulate checking for a user session
-    const timer = setTimeout(() => {
-      // To test the logged-in state, you can uncomment the following lines:
-      // setCurrentUser({
-      //   uid: 'mock-uid',
-      //   displayName: 'Mock User',
-      //   email: 'user@example.com',
-      // });
-      setLoading(false);
-    }, 1000);
+  const API_URL = "http://localhost:5000/api/auth";
 
-    return () => clearTimeout(timer);
+  /* ===== Auto login after page refresh ===== */
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (token && user) {
+      setCurrentUser(JSON.parse(user));
+    }
+    setLoading(false);
   }, []);
 
-  const signup = async (displayName: string, email: string, university: string, password: string) => {
+  /* ===================== SIGNUP ===================== */
+  const signup = async (
+    displayName: string,
+    email: string,
+    university: string,
+    password: string
+  ) => {
     setLoading(true);
-    // Mock signup
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setCurrentUser({
-      uid: 'mock-uid',
-      displayName,
-      email,
-      university,
+
+    const res = await fetch(`${API_URL}/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        displayName,
+        email,
+        university,
+        password,
+      }),
     });
+
+    if (!res.ok) {
+      setLoading(false);
+      throw new Error("Signup failed");
+    }
+
     setLoading(false);
   };
 
+  /* ===================== LOGIN ===================== */
   const login = async (email: string, password: string) => {
     setLoading(true);
-    // Mock login
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setCurrentUser({
-      uid: 'mock-uid',
-      displayName: email.split('@')[0] || 'Mock User',
-      email,
+
+    const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
+
+    if (!res.ok) {
+      setLoading(false);
+      throw new Error("Login failed");
+    }
+
+    const data = await res.json();
+
+    const user: User = {
+      uid: data.user.id || data.user._id || "user-id",
+      displayName: data.user.displayName || null,
+      email: data.user.email,
+      university: data.user.university,
+    };
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    setCurrentUser(user);
     setLoading(false);
   };
 
+  /* ===================== LOGOUT ===================== */
   const logout = async () => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setCurrentUser(null);
-    setLoading(false);
   };
 
+  /* ===================== UPDATE PROFILE ===================== */
   const updateUserProfile = async (updates: Partial<User>) => {
     if (!currentUser) return;
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setCurrentUser({ ...currentUser, ...updates });
-    setLoading(false);
+
+    const updatedUser = { ...currentUser, ...updates };
+    setCurrentUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
-  const value = {
+  /* ===================== VALUE ===================== */
+  const value: AuthContextType = {
     currentUser,
     loading,
     signup,
@@ -96,7 +149,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
