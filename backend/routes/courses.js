@@ -18,8 +18,8 @@ router.get('/', async (req, res) => {
 // Add a new course
 router.post('/', async (req, res) => {
     try {
-        const { userId, name, color } = req.body;
-        const newCourse = new Course({ userId, name, color });
+        const { userId, name, color, description, level, duration, syllabus } = req.body;
+        const newCourse = new Course({ userId, name, color, description, level, duration, syllabus });
         const course = await newCourse.save();
         res.json(course);
     } catch (err) {

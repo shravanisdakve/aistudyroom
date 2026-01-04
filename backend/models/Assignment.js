@@ -4,7 +4,7 @@ const assignmentSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String },
     courseId: { type: String, required: true }, // Logic course identifier (e.g., "CS101", "DBMS")
-    teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    teacherId: { type: String, required: true },
     dueAt: { type: Date, required: true },
     type: { type: String, enum: ['quiz', 'homework', 'project'], default: 'homework' },
     points: { type: Number, default: 100 },
