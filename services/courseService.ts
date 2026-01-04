@@ -1,13 +1,21 @@
-import axios from 'axios';
-import { type Course } from '../types';
-import { auth } from '../firebase'; // Need auth to get userId
+// Helper to get User ID (Real Auth > Local Storage > null)
+const getUserId = () => {
+    try {
+        if (typeof auth !== 'undefined' && auth?.currentUser?.uid) return auth.currentUser.uid;
+    } catch (e) { console.warn("Auth not initialized", e); }
 
-const API_URL = 'http://localhost:5000/api/courses';
+    // Fallback for demo/dev mode without real Firebase Auth
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+        try { return JSON.parse(localUser).uid; } catch (e) { return null; }
+    }
+    return null;
+}
 
 export const getCourses = async (): Promise<Course[]> => {
     try {
-        const userId = auth?.currentUser?.uid;
-        if (!userId) return []; // Should handle better, but for now return empty
+        const userId = getUserId();
+        if (!userId) return [];
 
         const response = await axios.get(API_URL, { params: { userId } });
         // Map _id to id for frontend compatibility
@@ -20,7 +28,7 @@ export const getCourses = async (): Promise<Course[]> => {
 
 export const addCourse = async (name: string): Promise<Course | null> => {
     try {
-        const userId = auth?.currentUser?.uid;
+        const userId = getUserId();
         if (!userId) throw new Error("User not authenticated");
 
         const response = await axios.post(API_URL, { userId, name });

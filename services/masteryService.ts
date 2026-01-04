@@ -6,14 +6,32 @@ export interface Mastery {
     lastUpdated: number;
 }
 
+import { auth } from '../firebase';
+import { type TopicMastery } from '../types';
 import axios from 'axios';
-import { type Mastery } from '../types';
+import { auth } from '../firebase';
 
 const API_URL = 'http://localhost:5000/api/mastery';
 
-export const getUserMastery = async (userId: string): Promise<Mastery[]> => {
+// Helper to get User ID (Real Auth > Local Storage > null)
+const getUserId = () => {
     try {
-        const response = await axios.get(`${API_URL}/${userId}`);
+        if (typeof auth !== 'undefined' && auth?.currentUser?.uid) return auth.currentUser.uid;
+    } catch (e) { console.warn("Auth not initialized", e); }
+
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+        try { return JSON.parse(localUser).uid; } catch (e) { return null; }
+    }
+    return null;
+}
+
+export const getUserMastery = async (userId: string): Promise<Mastery[]> => {
+    const effectiveUserId = userId || getUserId();
+    if (!effectiveUserId) return [];
+
+    try {
+        const response = await axios.get(`${API_URL}/${effectiveUserId}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching mastery:", error);

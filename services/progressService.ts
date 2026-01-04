@@ -25,11 +25,31 @@ const DEFAULT_PROGRESS: UserProgress = {
     challenges: []
 };
 
+import { auth, db } from '../firebase';
+import { type UserProgress } from '../types';
+import axios from 'axios';
+
+// Helper to get User ID (Real Auth > Local Storage > null)
+const getUserId = () => {
+    try {
+        if (typeof auth !== 'undefined' && auth?.currentUser?.uid) return auth.currentUser.uid;
+    } catch (e) { console.warn("Auth not initialized", e); }
+
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+        try { return JSON.parse(localUser).uid; } catch (e) { return null; }
+    }
+    return null;
+}
+
 // --- API Functions ---
 
 export const getUserProgress = async (userId: string): Promise<UserProgress> => {
+    const effectiveUserId = userId || getUserId();
+    if (!effectiveUserId) return DEFAULT_PROGRESS;
+
     try {
-        const response = await axios.get(`${API_URL}/${userId}`);
+        const response = await axios.get(`${API_URL}/${effectiveUserId}`);
         return response.data || DEFAULT_PROGRESS;
     } catch (error) {
         console.error("Error fetching progress:", error);

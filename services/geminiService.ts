@@ -173,6 +173,7 @@ export const getStudySuggestions = async (reportJson: string): Promise<string> =
 };
 
 // --- FLASHCARD GENERATION SERVICE ---
+// --- FLASHCARD GENERATION SERVICE ---
 export const generateFlashcards = async (context: string): Promise<string> => {
     const prompt = `Based on the following context, generate a list of flashcards. Each flashcard should have a 'front' (a question or term) and a 'back' (the answer or definition). Context: "${context.substring(0, 4000)}"`;
 
