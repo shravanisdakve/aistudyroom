@@ -86,14 +86,12 @@ const App: React.FC = () => {
             <Route path="notes" element={<Notes />} />
             <Route path="community/:courseId" element={<CourseCommunity />} />
             <Route path="quizzes" element={<QuizPractice />} />
-// ... (This content is replacing the invalid block)
             <Route path="lesson-planner" element={<LessonPlanner />} />
             <Route path="auto-grader" element={<AutoGrader />} />
             <Route path="teacher-dashboard" element={<TeacherDashboard />} />
             <Route path="create-assignment" element={<CreateAssignment />} />
             <Route path="create-course" element={<CreateCourse />} />
             <Route path="assignments/:id" element={<AssignmentDetail />} />
-// ...
             <Route path="interview" element={<InterviewQuiz />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="sudoku" element={<SudokuGame />} />

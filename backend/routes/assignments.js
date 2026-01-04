@@ -90,6 +90,16 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// GET All Submissions for an Assignment (Teacher grading view)
+router.get('/:id/submissions', async (req, res) => {
+    try {
+        const submissions = await AssignmentSubmission.find({ assignmentId: req.params.id });
+        res.json(submissions);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 
 // SUBMIT Assignment (Student)

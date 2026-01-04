@@ -60,3 +60,63 @@ export const getCourse = async (id: string): Promise<Course | null> => {
     const courses = await getCourses();
     return courses.find(c => c.id === id) || null;
 };
+
+// ========== ENROLLMENT FUNCTIONS ==========
+
+export interface AvailableCourse {
+    id: string;
+    name: string;
+    code: string;
+    description: string;
+    level: string;
+    duration: string;
+    teacherId: string;
+    studentsCount: number;
+}
+
+export interface EnrolledCourse {
+    id: string;
+    name: string;
+    code: string;
+    description: string;
+    level: string;
+    duration: string;
+    teacherId: string;
+    color: string;
+}
+
+export const getAvailableCourses = async (): Promise<AvailableCourse[]> => {
+    try {
+        const response = await axios.get(`${API_URL}/available`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching available courses:", error);
+        return [];
+    }
+};
+
+export const joinCourseByCode = async (code: string): Promise<{ success: boolean; message: string; course?: any }> => {
+    try {
+        const userId = getUserId();
+        if (!userId) return { success: false, message: 'Please log in first' };
+
+        const response = await axios.post(`${API_URL}/join`, { code, studentId: userId });
+        return { success: true, message: response.data.message, course: response.data.course };
+    } catch (error: any) {
+        const msg = error.response?.data?.error || 'Failed to join course';
+        return { success: false, message: msg };
+    }
+};
+
+export const getEnrolledCourses = async (studentId?: string): Promise<EnrolledCourse[]> => {
+    try {
+        const id = studentId || getUserId();
+        if (!id) return [];
+
+        const response = await axios.get(`${API_URL}/enrolled/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching enrolled courses:", error);
+        return [];
+    }
+};

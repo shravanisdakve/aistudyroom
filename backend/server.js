@@ -14,7 +14,8 @@ app.use("/api/courses", require("./routes/courses")); // <-- Added
 app.use("/api/progress", require("./routes/progress")); // <-- Added
 app.use("/api/mastery", require("./routes/mastery")); // <-- Added
 app.use("/api/assignments", require("./routes/assignments"));
-app.use("/api/dashboard", require("./routes/dashboard")); // <-- Added
+app.use("/api/dashboard", require("./routes/dashboard"));
+app.use("/api/seed", require("./routes/seed")); // Seed endpoint
 
 app.listen(5000, () =>
   console.log("Backend running on http://localhost:5000")

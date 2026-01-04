@@ -1,12 +1,14 @@
 const mongoose = require('mongoose');
 
 const CourseSchema = new mongoose.Schema({
-    userId: { type: String, required: true },
+    userId: { type: String, required: true }, // Teacher ID
     name: { type: String, required: true },
-    color: { type: String, default: '#8b5cf6' }, // Violet default
+    color: { type: String, default: '#8b5cf6' },
     description: { type: String },
-    level: { type: String }, // e.g. "Beginner", "Grade 10"
-    duration: { type: String }, // e.g. "4 Weeks"
+    level: { type: String },
+    duration: { type: String },
+    section: { type: String, default: 'A' },
+    term: { type: String, default: 'Spring 2026' },
     syllabus: [{
         week: Number,
         topic: String,

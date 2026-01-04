@@ -7,14 +7,22 @@ import {
     BookOpen, CheckCircle, AlertCircle, Zap
 } from 'lucide-react';
 import { getStudentDashboard, type StudentDashboardData } from '../services/dashboardService';
-import { getDashboardInsights } from '../services/ai/geminiService'; // Import AI service
+import { getDashboardInsights } from '../services/ai/geminiService';
+import { getEnrolledCourses, joinCourseByCode, type EnrolledCourse } from '../services/courseService';
 import { format } from 'date-fns';
+import { Plus, X } from 'lucide-react';
+import { Modal, Input } from '../components/ui';
 
 const Dashboard: React.FC = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [data, setData] = useState<StudentDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+    const [showJoinModal, setShowJoinModal] = useState(false);
+    const [joinCode, setJoinCode] = useState('');
+    const [joinLoading, setJoinLoading] = useState(false);
+    const [joinError, setJoinError] = useState('');
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -37,11 +45,33 @@ const Dashboard: React.FC = () => {
 
                     setData(result);
                 }
+
+                // Fetch enrolled courses
+                const courses = await getEnrolledCourses();
+                setEnrolledCourses(courses);
+
                 setLoading(false);
             }
         };
         fetchDashboard();
     }, [currentUser]);
+
+    const handleJoinCourse = async () => {
+        if (!joinCode.trim()) return;
+        setJoinLoading(true);
+        setJoinError('');
+        const result = await joinCourseByCode(joinCode.trim());
+        if (result.success) {
+            setShowJoinModal(false);
+            setJoinCode('');
+            // Refresh enrolled courses
+            const courses = await getEnrolledCourses();
+            setEnrolledCourses(courses);
+        } else {
+            setJoinError(result.message);
+        }
+        setJoinLoading(false);
+    };
 
     if (loading) return <div className="p-8 text-center text-slate-400">Loading your space...</div>;
     if (!data) return null;
@@ -162,6 +192,38 @@ const Dashboard: React.FC = () => {
                 {/* Right Column: Schedule & Quick Links */}
                 <div className="space-y-6">
 
+                    {/* My Courses */}
+                    <Card className="p-5 mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                                <BookOpen size={18} className="text-violet-400" /> My Courses
+                            </h3>
+                            <Button size="sm" variant="ghost" className="text-violet-400 h-8" onClick={() => setShowJoinModal(true)}>
+                                <Plus size={14} className="mr-1" /> Join
+                            </Button>
+                        </div>
+                        {enrolledCourses.length === 0 ? (
+                            <div className="text-center py-4 text-slate-500">
+                                <p className="text-sm">No courses yet</p>
+                                <Button variant="ghost" size="sm" className="mt-2 text-violet-400" onClick={() => setShowJoinModal(true)}>
+                                    Join your first course
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {enrolledCourses.slice(0, 4).map(course => (
+                                    <div key={course.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => navigate(`/community/${course.id}`)}>
+                                        <div className="w-2 h-8 rounded-full" style={{ backgroundColor: course.color }} />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-slate-300 text-sm truncate">{course.name}</p>
+                                            <p className="text-xs text-slate-500">{course.level}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Card>
+
                     {/* Schedule */}
                     <Card className="p-5">
                         <h3 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
@@ -184,6 +246,24 @@ const Dashboard: React.FC = () => {
 
                 </div>
             </div>
+
+            {/* Join Course Modal */}
+            <Modal isOpen={showJoinModal} onClose={() => { setShowJoinModal(false); setJoinCode(''); setJoinError(''); }} title="Join a Course">
+                <div className="space-y-4">
+                    <p className="text-slate-400 text-sm">Enter the course code provided by your teacher.</p>
+                    <Input
+                        placeholder="e.g. ABC123"
+                        value={joinCode}
+                        onChange={(e) => { setJoinCode(e.target.value.toUpperCase()); setJoinError(''); }}
+                        className="text-center text-lg tracking-widest font-mono"
+                    />
+                    {joinError && <p className="text-red-400 text-sm text-center">{joinError}</p>}
+                    <div className="flex gap-2">
+                        <Button variant="ghost" className="flex-1" onClick={() => setShowJoinModal(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-violet-600" onClick={handleJoinCourse} isLoading={joinLoading} disabled={!joinCode.trim()}>Join Course</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
