@@ -1,8 +1,9 @@
+
 import { GoogleGenAI, Chat } from '@google/genai';
-import { streamChat, generateQuizQuestion, getStudySuggestions, generateFlashcards, getSuggestionForMood } from './geminiService'; // Import underlying primitives
-import { getUserMastery, Mastery } from './masteryService';
-import { getNotes } from './notesService';
-import { getUserProgress } from './progressService';
+import { streamChat, generateQuizQuestion, getStudySuggestions, generateFlashcards, getSuggestionForMood } from './geminiService'; // Import underlying primitives in SAME folder
+import { getUserMastery, Mastery } from '../masteryService'; // Up one level
+import { getNotes } from '../notesService'; // Up one level
+import { getUserProgress } from '../progressService'; // Up one level
 
 // The AI Brain that knows YOU.
 export class AIEngine {
@@ -79,6 +80,13 @@ If they are strong in it, challenge them with deeper questions.
     async getMoodSupport(mood: string): Promise<string> {
         // Calls the REAL geminiService function (which we will update next)
         return getSuggestionForMood(mood);
+    }
+
+    /**
+     * Generates a quiz question based on the provided context (e.g. chat history).
+     */
+    async generateQuizQuestion(context: string): Promise<string> {
+        return generateQuizQuestion(context);
     }
 }
 

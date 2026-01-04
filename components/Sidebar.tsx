@@ -86,9 +86,7 @@ const navigation = [
     { name: 'Notes', href: '/notes', icon: FileText },
     { name: 'AI Tutor', href: '/tutor', icon: MessageSquare },
     { name: 'Study Room', href: '/study-lobby', icon: Users },
-    { name: 'Lesson Planner', href: '/lesson-planner', icon: ClipboardList },
-    { name: 'Auto Grader', href: '/auto-grader', icon: CheckCircle }, // <-- ADDED LINK
-    //   { name: 'Community', href: '/insights?tab=community', icon: Users }, // Assuming Community page removed/merged
+    // Teacher Hub link removed from static list
 ];
 
 const Sidebar: React.FC = () => {
@@ -153,6 +151,22 @@ const Sidebar: React.FC = () => {
                             {item.name}
                         </NavLink>
                     ))}
+
+                    {/* --- Teacher Hub Link (Conditional) --- */}
+                    {currentUser?.role === 'teacher' && (
+                        <NavLink
+                            to="/teacher-dashboard"
+                            className={({ isActive }) =>
+                                `flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
+                                    ? 'bg-emerald-600 text-white shadow-lg' // Use Emerald for Teacher distinction
+                                    : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
+                                }`
+                            }
+                        >
+                            <ClipboardList className="mr-3 h-5 w-5" aria-hidden="true" />
+                            Teacher Hub
+                        </NavLink>
+                    )}
                 </nav>
                 <div className="mt-auto">
                     <div className="p-4 rounded-lg bg-slate-800 ring-1 ring-slate-700"> {/* Added ring */}

@@ -5,7 +5,8 @@ import { getNotes, addTextNote, uploadNoteFile, deleteNote, getFlashcards, addFl
 import { type Note, type Course, type Flashcard as FlashcardType } from '../types';
 import { PageHeader, Button, Input, Textarea, Select, Modal, Spinner } from '../components/ui';
 import { PlusCircle, Trash2, Upload, FileText, BookOpen, Layers, X, Brain, Edit, Save, ArrowLeft, Download, Eye, EyeOff } from 'lucide-react';
-import { generateFlashcards, extractTextFromFile } from '../services/geminiService';
+import { summarizeText, streamStudyBuddyChat, generateFlashcards, generateImage, generateCode } from '../services/ai/geminiService';
+import { aiEngine } from '../services/ai/aiEngine';
 import { useNavigate } from 'react-router-dom';
 import Flashcard from '../components/Flashcard';
 

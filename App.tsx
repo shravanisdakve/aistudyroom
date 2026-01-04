@@ -20,7 +20,8 @@ import SudokuGame from './pages/SudokuGame';
 import ZipGame from './pages/ZipGame';
 import SpeedMathGame from './pages/SpeedMathGame';
 import LessonPlanner from './pages/LessonPlanner';
-import AutoGrader from './pages/AutoGrader'; // <-- ADDED IMPORT
+import AutoGrader from './pages/AutoGrader';
+import TeacherDashboard from './pages/TeacherDashboard';
 
 
 const AuthLayout: React.FC = () => (
@@ -81,8 +82,11 @@ const App: React.FC = () => {
             <Route path="notes" element={<Notes />} />
             <Route path="community/:courseId" element={<CourseCommunity />} />
             <Route path="quizzes" element={<QuizPractice />} />
+// ... (This content is replacing the invalid block)
             <Route path="lesson-planner" element={<LessonPlanner />} />
-            <Route path="auto-grader" element={<AutoGrader />} /> {/* <-- ADDED ROUTE */}
+            <Route path="auto-grader" element={<AutoGrader />} />
+            <Route path="teacher-dashboard" element={<TeacherDashboard />} />
+// ...
             <Route path="interview" element={<InterviewQuiz />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="sudoku" element={<SudokuGame />} />

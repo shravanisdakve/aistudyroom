@@ -6,12 +6,14 @@ import { type Course, type Mood as MoodType } from '../types';
 import { getTimeOfDayGreeting, getMostUsedTool } from '../services/personalizationService';
 import { getProductivityReport } from '../services/analyticsService';
 import { getCourses, addCourse, deleteCourse } from '../services/courseService';
-import { getUserProgress, type UserProgress } from '../services/progressService'; // Import progress
+import { getUserProgress, type UserProgress } from '../services/progressService';
+import { useDashboardData } from '../hooks/useDashboardData';
 import GoalsWidget from '../components/GoalsWidget';
 import MoodCheckin from '../components/MoodCheckin'; // Import new MoodCheckin
 import { FocusCoachWidget } from '../components/widgets/FocusCoachWidget'; // Adaptive Widget
 import { ChallengeWidget } from '../components/widgets/ChallengeWidget'; // Adaptive Widget
-import { getSuggestionForMood } from '../services/geminiService'; // Import AI suggestion service
+import { aiEngine } from '../services/ai/aiEngine';
+import { getSuggestionForMood } from '../services/ai/geminiService'; // Import AI suggestion service
 import {
     MessageSquare, Share2, FileText, Code, ArrowRight,
     Target, Lightbulb, Timer, Zap, BookOpen,
@@ -252,18 +254,17 @@ const StudyHub: React.FC = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [mostUsedToolKey, setMostUsedToolKey] = useState<string | null>(null);
-    const [userProgress, setUserProgress] = useState<UserProgress | null>(null); // State for progress
+    const { progress, moodSuggestion, loading, handleMoodUpdate } = useDashboardData(); // Use the hook
+
+    // Derived state for UI only
     const [showMoodCheckin, setShowMoodCheckin] = useState(() => {
         try {
-            // Check if the flag exists in sessionStorage
             return !sessionStorage.getItem(SESSION_MOOD_CHECKIN_KEY);
         } catch (error) {
             console.error("Error accessing sessionStorage:", error);
-            return true; // Default to showing if sessionStorage is unavailable
+            return true;
         }
     });
-    const [aiSuggestion, setAiSuggestion] = useState<string | null>(null); // New state for AI suggestion
-    const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false); // New state for loading
 
     useEffect(() => {
         const fetchMostUsedTool = async () => {
@@ -271,37 +272,16 @@ const StudyHub: React.FC = () => {
             setMostUsedToolKey(toolKey);
         };
         fetchMostUsedTool();
-
-        // Fetch user progress for adaptive dashboard
-        const fetchProgress = async () => {
-            if (currentUser) {
-                const p = await getUserProgress(currentUser.uid);
-                setUserProgress(p);
-            }
-        }
-        fetchProgress();
-
     }, [currentUser]);
 
-    const handleMoodSelected = async (mood: MoodType['mood']) => { // Modified to accept mood
+    const onMoodSelected = async (mood: MoodType['mood']) => {
         setShowMoodCheckin(false);
         try {
-            sessionStorage.setItem(SESSION_MOOD_CHECKIN_KEY, 'true'); // Mark as checked in for this session
+            sessionStorage.setItem(SESSION_MOOD_CHECKIN_KEY, 'true');
         } catch (error) {
             console.error("Error setting sessionStorage:", error);
         }
-        setIsLoadingSuggestion(true);
-        setAiSuggestion(null); // Clear old suggestion
-
-        try {
-            const suggestion = await getSuggestionForMood(mood);
-            setAiSuggestion(suggestion);
-        } catch (error) {
-            console.error("Error getting AI suggestion:", error);
-            setAiSuggestion("Couldn't get a suggestion right now.");
-        } finally {
-            setIsLoadingSuggestion(false);
-        }
+        await handleMoodUpdate(mood);
     }
 
     const greeting = getTimeOfDayGreeting();
@@ -309,15 +289,23 @@ const StudyHub: React.FC = () => {
     const firstName = currentUser?.displayName?.split(' ')[0] || 'User';
     const tagline = useMemo(() => taglines[Math.floor(Math.random() * taglines.length)], []);
 
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <p className="text-slate-400 animate-pulse">Loading your personalized dashboard...</p>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-8">
             <PageHeader title={`${greeting}, ${firstName}!`} subtitle={tagline} />
 
             {/* --- ADAPTIVE WIDGET AREA --- */}
-            {userProgress && (
+            {progress && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* If Level is low (Struggling/New), show Focus Coach */}
-                    {userProgress.level <= 2 && (
+                    {progress.level <= 2 && (
                         <FocusCoachWidget
                             recommendedTask="Complete Introduction to React Quiz"
                             durationMins={15}
@@ -326,7 +314,7 @@ const StudyHub: React.FC = () => {
                     )}
 
                     {/* If Level is high (Topper), show Challenge */}
-                    {userProgress.level > 5 && (
+                    {progress.level > 5 && (
                         <ChallengeWidget
                             topic="Advanced State Management"
                             xpReward={150}
@@ -376,14 +364,13 @@ const StudyHub: React.FC = () => {
 
                 <div className="space-y-8">
                     <GoalsWidget />
-                    {showMoodCheckin && <MoodCheckin onMoodSelect={handleMoodSelected} />}
-                    {(isLoadingSuggestion || aiSuggestion) && (
-                        <div className="bg-slate-800/50 p-4 rounded-xl ring-1 ring-slate-700 flex items-center gap-4">
+                    {showMoodCheckin && <MoodCheckin onMoodSelect={onMoodSelected} />}
+                    {moodSuggestion && (
+                        <div className="bg-slate-800/50 p-4 rounded-xl ring-1 ring-slate-700 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
                             <Sparkles className="text-sky-400 w-8 h-8 flex-shrink-0" />
                             <div>
                                 <h4 className="font-semibold text-lg text-sky-300">Smart Suggestion</h4>
-                                {isLoadingSuggestion && <p className="text-slate-300">Thinking...</p>}
-                                {aiSuggestion && <p className="text-slate-100">{aiSuggestion}</p>}
+                                <p className="text-slate-100">{moodSuggestion}</p>
                             </div>
                         </div>
                     )}

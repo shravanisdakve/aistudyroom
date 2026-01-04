@@ -9,6 +9,20 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
+  },
+  displayName: {
+    type: String,
+  },
+  university: {
+    type: String,
+  },
+  role: {
+    type: String,
+    enum: ['student', 'teacher'],
+    default: 'student'
+  },
+  primarySubject: {
+    type: String,
   }
 });
 

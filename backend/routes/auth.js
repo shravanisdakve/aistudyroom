@@ -7,7 +7,7 @@ const router = express.Router();
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
+  const { displayName, email, university, password, role, primarySubject } = req.body;
 
   const userExists = await User.findOne({ email });
   if (userExists)
@@ -15,9 +15,33 @@ router.post("/signup", async (req, res) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  await User.create({ email, password: hashedPassword });
+  const newUser = await User.create({
+    displayName,
+    email,
+    university,
+    password: hashedPassword,
+    role: role || 'student',
+    primarySubject
+  });
 
-  res.status(201).json({ message: "Signup successful" });
+  const token = jwt.sign(
+    { id: newUser._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.status(201).json({
+    message: "Signup successful",
+    token,
+    user: {
+      id: newUser._id,
+      displayName: newUser.displayName,
+      email: newUser.email,
+      university: newUser.university,
+      role: newUser.role,
+      primarySubject: newUser.primarySubject
+    }
+  });
 });
 
 // LOGIN
@@ -38,7 +62,18 @@ router.post("/login", async (req, res) => {
     { expiresIn: "7d" }
   );
 
-  res.json({ token, user: { email: user.email } });
+  // Return full user object (except password)
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      displayName: user.displayName,
+      email: user.email,
+      university: user.university,
+      role: user.role,
+      primarySubject: user.primarySubject
+    }
+  });
 });
 
 module.exports = router;

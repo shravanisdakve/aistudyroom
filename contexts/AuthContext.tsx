@@ -13,6 +13,8 @@ interface User {
   displayName: string | null;
   email: string | null;
   university?: string;
+  role?: 'student' | 'teacher';
+  primarySubject?: string;
 }
 
 interface AuthContextType {
@@ -22,7 +24,9 @@ interface AuthContextType {
     displayName: string,
     email: string,
     university: string,
-    password: string
+    password: string,
+    role: 'student' | 'teacher',
+    primarySubject?: string
   ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -31,7 +35,7 @@ interface AuthContextType {
 
 /* ===================== CONTEXT ===================== */
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -67,58 +71,91 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     displayName: string,
     email: string,
     university: string,
-    password: string
+    password: string,
+    role: 'student' | 'teacher',
+    primarySubject?: string
   ) => {
     setLoading(true);
 
-    const res = await fetch(`${API_URL}/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        displayName,
-        email,
-        university,
-        password,
-      }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName,
+          email,
+          university,
+          password,
+          role,
+          primarySubject,
+        }),
+      });
 
-    if (!res.ok) {
+      if (!res.ok) {
+        throw new Error("Signup failed");
+      }
+
+      const data = await res.json();
+
+      // Auto-login logic
+      const user: User = {
+        uid: data.user.id || data.user._id || "user-id",
+        displayName: data.user.displayName || null,
+        email: data.user.email,
+        university: data.user.university,
+        role: data.user.role || 'student',
+        primarySubject: data.user.primarySubject,
+      };
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      setCurrentUser(user);
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      throw error;
+    } finally {
       setLoading(false);
-      throw new Error("Signup failed");
     }
-
-    setLoading(false);
   };
 
   /* ===================== LOGIN ===================== */
   const login = async (email: string, password: string) => {
     setLoading(true);
 
-    const res = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!res.ok) {
+      if (!res.ok) {
+        throw new Error("Login failed");
+      }
+
+      const data = await res.json();
+
+      const user: User = {
+        uid: data.user.id || data.user._id || "user-id",
+        displayName: data.user.displayName || null,
+        email: data.user.email,
+        university: data.user.university,
+        role: data.user.role || 'student',
+        primarySubject: data.user.primarySubject,
+      };
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      setCurrentUser(user);
+    } catch (error) {
+      console.error("Login Error", error);
+      throw error;
+    } finally {
       setLoading(false);
-      throw new Error("Login failed");
     }
-
-    const data = await res.json();
-
-    const user: User = {
-      uid: data.user.id || data.user._id || "user-id",
-      displayName: data.user.displayName || null,
-      email: data.user.email,
-      university: data.user.university,
-    };
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(user));
-
-    setCurrentUser(user);
-    setLoading(false);
   };
 
   /* ===================== LOGOUT ===================== */

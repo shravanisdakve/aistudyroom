@@ -26,8 +26,7 @@ const DEFAULT_PROGRESS: UserProgress = {
 };
 
 import { auth, db } from '../firebase';
-import { type UserProgress } from '../types';
-import axios from 'axios';
+// type UserProgress is already defined locally or imported, cleaning up to avoid conflicts
 
 // Helper to get User ID (Real Auth > Local Storage > null)
 const getUserId = () => {

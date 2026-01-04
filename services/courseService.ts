@@ -1,4 +1,8 @@
-// Helper to get User ID (Real Auth > Local Storage > null)
+import axios from 'axios';
+import { auth } from '../firebase';
+import { type Course } from '../types';
+
+const API_URL = 'http://localhost:5000/api/courses';
 const getUserId = () => {
     try {
         if (typeof auth !== 'undefined' && auth?.currentUser?.uid) return auth.currentUser.uid;
