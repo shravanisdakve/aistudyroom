@@ -1,385 +1,279 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PageHeader, Button, Input } from '../components/ui';
+import { PageHeader, Button, ScrollReveal } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
-import { type Course, type Mood as MoodType } from '../types';
-import { getTimeOfDayGreeting, getMostUsedTool } from '../services/personalizationService';
-import { getProductivityReport } from '../services/analyticsService';
-import { getCourses, addCourse, deleteCourse } from '../services/courseService';
+import { getTimeOfDayGreeting } from '../services/personalizationService';
 import { getUserProgress, type UserProgress } from '../services/progressService';
-import { useDashboardData } from '../hooks/useDashboardData';
-import GoalsWidget from '../components/GoalsWidget';
-import MoodCheckin from '../components/MoodCheckin'; // Import new MoodCheckin
-import { FocusCoachWidget } from '../components/widgets/FocusCoachWidget'; // Adaptive Widget
-import { ChallengeWidget } from '../components/widgets/ChallengeWidget'; // Adaptive Widget
-import { aiEngine } from '../services/ai/aiEngine';
-import { getSuggestionForMood } from '../services/ai/geminiService'; // Import AI suggestion service
+import { getUserMastery, type Mastery, updateMastery } from '../services/masteryService'; // Make sure this is exported
+import { getStudentAssignments, type Assignment } from '../services/assignmentService';
+import { getCourses, type Course } from '../services/courseService';
 import {
-    MessageSquare, Share2, FileText, Code, ArrowRight,
-    Target, Lightbulb, Timer, Zap, BookOpen,
-    Play, Pause, RefreshCw, PlusCircle, Trash2, User, Users, Star,
-    BarChart, Clock, Brain, TrendingUp, TrendingDown, Repeat, Sparkles // Added Sparkles
+    BookOpen, CheckCircle, Clock, TrendingUp, AlertCircle,
+    Calendar, Trophy, Zap, MessageSquare, ArrowRight, Brain, FileText, Layout
 } from 'lucide-react';
 
-const formatSeconds = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    let result = '';
-    if (hours > 0) result += `${hours}h `;
-    if (minutes > 0) result += `${minutes}m`;
-    return result.trim() || '0m';
-};
-
-const ProductivityInsights: React.FC = () => {
-    const [report, setReport] = useState<Awaited<ReturnType<typeof getProductivityReport>> | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchReport = async () => {
-            setIsLoading(true);
-            try {
-                const fetchedReport = await getProductivityReport();
-                setReport(fetchedReport);
-            } catch (error) {
-                console.error("Error fetching productivity report:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchReport();
-    }, []);
-
-    if (isLoading) {
-        return (
-            <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
-                <p className="text-slate-400">Loading weekly snapshot...</p>
-            </div>
-        );
-    }
-
-    if (!report) return (
-        <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
-            <p className="text-slate-400">Could not load productivity data.</p>
-        </div>
-    );
-
-    const hasData = report.totalStudyTime > 0 || report.totalQuizzes > 0;
-
-    return (
-        <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700">
-            <h3 className="text-xl font-bold text-slate-100 flex items-center mb-4">
-                <BarChart className="w-6 h-6 mr-3 text-violet-400" /> Weekly Snapshot
-            </h3>
-            {!hasData ? (
-                <p className="text-center text-slate-400 py-4">Start a study session or take a quiz to see your insights here.</p>
-            ) : (
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center text-sm bg-slate-800 p-3 rounded-lg">
-                        <div className="flex items-center gap-2">
-                            <Clock size={16} className="text-slate-400" />
-                            <span className="font-medium text-slate-300">Total Study Time</span>
-                        </div>
-                        {/* Make sure formatSeconds is defined or imported */}
-                        <span className="font-mono text-white">{formatSeconds(report.totalStudyTime)}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm bg-slate-800 p-3 rounded-lg">
-                        <div className="flex items-center gap-2">
-                            <Brain size={16} className="text-slate-400" />
-                            <span className="font-medium text-slate-300">Quiz Accuracy</span>
-                        </div>
-                        <span className="font-mono text-white">{report.quizAccuracy}%</span>
-                    </div>
-                </div>
-            )}
-            <Link to="/insights">
-                <Button className="w-full mt-6 text-sm">View Detailed Insights</Button>
-            </Link>
-        </div>
-    );
-};
-
-const MyCourses: React.FC = () => {
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [newCourseName, setNewCourseName] = useState('');
-    const [isAdding, setIsAdding] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchCourses = async () => {
-            setIsLoading(true);
-            console.log("MyCourses: Fetching courses...");
-            try {
-                const fetchedCourses = await getCourses();
-                console.log("MyCourses: Fetched courses:", fetchedCourses);
-                setCourses(fetchedCourses);
-            } catch (error) {
-                console.error("Error fetching courses:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchCourses();
-    }, []);
-
-    const handleAddCourse = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newCourseName.trim()) {
-            console.log("MyCourses: Adding course:", newCourseName);
-            try {
-                const newCourse = await addCourse(newCourseName.trim());
-                if (newCourse) {
-                    console.log("MyCourses: Added course:", newCourse);
-                    setCourses(prev => [...prev, newCourse]);
-                }
-                setNewCourseName('');
-                setIsAdding(false);
-            } catch (error) {
-                console.error("Error adding course:", error);
-                // Optionally show error to user
-            }
-        }
-    }
-
-    const handleDeleteCourse = async (id: string) => {
-        console.log("MyCourses: Deleting course:", id);
-        try {
-            await deleteCourse(id);
-            setCourses(prev => prev.filter(c => c.id !== id));
-            console.log("MyCourses: Deleted course:", id);
-        } catch (error) {
-            console.error("Error deleting course:", error);
-            // Optionally show error to user
-        }
-    }
-
-    return (
-        <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700">
-            <h3 className="text-xl font-bold text-slate-100 flex items-center mb-4">
-                <BookOpen className="w-6 h-6 mr-3 text-violet-400" /> My Courses
-            </h3>
-            <div className="space-y-2">
-                {isLoading && <p className="text-slate-400 text-center">Loading courses...</p>}
-                {!isLoading && courses.length === 0 && !isAdding && (
-                    <div className="text-center py-4">
-                        <p className="text-slate-400 mb-4">You haven't added any courses yet. Add one to get started!</p>
-                    </div>
-                )}
-                {courses.map(course => (
-                    <Link to="/notes" state={{ courseId: course.id }} key={course.id} className="group flex items-center justify-between bg-slate-800 p-3 rounded-lg hover:bg-slate-700 transition-colors">
-                        <div className="flex items-center overflow-hidden mr-2"> {/* Added overflow-hidden */}
-                            <span className="w-3 h-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: course.color }}></span>
-                            <span className="font-medium text-slate-300 truncate">{course.name}</span> {/* Added truncate */}
-                        </div>
-                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteCourse(course.id); }} className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                            <Trash2 size={16} />
-                        </button>
-                    </Link>
-                ))}
-            </div>
-            {isAdding ? (
-                <form onSubmit={handleAddCourse} className="mt-4 flex gap-2">
-                    <Input
-                        value={newCourseName}
-                        onChange={(e) => setNewCourseName(e.target.value)}
-                        placeholder="e.g., Organic Chemistry"
-                        className="text-sm flex-1" // Added flex-1
-                        autoFocus
-                    />
-                    <Button type="submit" className="px-3 py-2 text-sm">Add</Button>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="px-3 py-2 text-sm text-slate-400">Cancel</Button> {/* Added Cancel */}
-                </form>
-            ) : (
-                <Button onClick={() => setIsAdding(true)} className="w-full mt-4 bg-slate-700/50 hover:bg-slate-700 text-sm shadow-none">
-                    <PlusCircle size={16} className="mr-2" />
-                    Add Course
-                </Button>
-            )}
-        </div>
-    );
-}
-
-const tools = [
-    { key: 'tutor', name: 'AI Tutor', href: '/tutor', description: 'Practice concepts with your AI tutor.', icon: MessageSquare, color: 'text-sky-400', bgColor: 'bg-sky-900/50' },
-    { key: 'summaries', name: 'Summaries Generator', href: '/notes', description: 'Generate summaries from your notes.', icon: FileText, color: 'text-emerald-400', bgColor: 'bg-emerald-900/50' },
-    { key: 'quizzes', name: 'Quizzes & Practice', href: '/quizzes', description: 'Test your knowledge with practice quizzes.', icon: Brain, color: 'text-rose-400', bgColor: 'bg-rose-900/50' },
-];
-
-interface ToolCardProps {
-    name: string;
-    href: string;
-    description: string;
-    icon: React.ElementType;
-    color: string;
-    bgColor: string;
-}
-const ToolCard: React.FC<ToolCardProps> = ({ name, href, description, icon: Icon, color, bgColor }) => {
-    return (
-        <Link to={href} className="group block p-6 bg-slate-800 rounded-xl hover:bg-slate-700/80 transition-all duration-300 ring-1 ring-slate-700 hover:ring-violet-500">
-            <div className="flex items-center space-x-4">
-                <div className={`p-3 rounded-lg ${bgColor}`}>
-                    <Icon className={`w-6 h-6 ${color}`} />
-                </div>
-                <h3 className="text-lg font-bold text-slate-100">{name}</h3>
-            </div>
-            <p className="mt-3 text-sm text-slate-400">{description}</p>
-            <div className="mt-4 flex items-center text-sm font-semibold text-violet-400 group-hover:text-violet-300">
-                <span>Start Session</span>
-                <ArrowRight className="ml-2 w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </div>
-        </Link>
-    );
-};
-
-const ToolsGrid: React.FC = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        {/* --- FIX: Destructure key from the rest of the props --- */}
-        {tools.map(tool => {
-            const { key, ...rest } = tool; // 'key' is for React, 'rest' has all other props
-            return <ToolCard key={key} {...rest} />;
-        })}
-        {/* --- END FIX --- */}
-    </div>
-);
-
-const taglines = [
-    "Ready to make today a productive one?",
-    "Let's get started on your goals.",
-    "Your central hub for accelerated learning. Let's get started."
-];
-
-const SESSION_MOOD_CHECKIN_KEY = 'nexusMoodCheckedInSession'; // Key for sessionStorage
-
-const StudyHub: React.FC = () => {
+const LearnerHome: React.FC = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
-    const [mostUsedToolKey, setMostUsedToolKey] = useState<string | null>(null);
-    const { progress, moodSuggestion, loading, handleMoodUpdate } = useDashboardData(); // Use the hook
-
-    // Derived state for UI only
-    const [showMoodCheckin, setShowMoodCheckin] = useState(() => {
-        try {
-            return !sessionStorage.getItem(SESSION_MOOD_CHECKIN_KEY);
-        } catch (error) {
-            console.error("Error accessing sessionStorage:", error);
-            return true;
-        }
-    });
+    const [progress, setProgress] = useState<UserProgress | null>(null);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [mastery, setMastery] = useState<Mastery[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchMostUsedTool = async () => {
-            const toolKey = await getMostUsedTool();
-            setMostUsedToolKey(toolKey);
-        };
-        fetchMostUsedTool();
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [p, a, m, c] = await Promise.all([
+                    getUserProgress(currentUser?.uid || ''),
+                    getStudentAssignments(currentUser?.uid),
+                    getUserMastery(currentUser?.uid || ''),
+                    getCourses()
+                ]);
+                setProgress(p);
+                setAssignments(a);
+                setMastery(m);
+                setCourses(c);
+            } catch (err) {
+                console.error("Dashboard load error", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        if (currentUser) loadData();
     }, [currentUser]);
 
-    const onMoodSelected = async (mood: MoodType['mood']) => {
-        setShowMoodCheckin(false);
-        try {
-            sessionStorage.setItem(SESSION_MOOD_CHECKIN_KEY, 'true');
-        } catch (error) {
-            console.error("Error setting sessionStorage:", error);
-        }
-        await handleMoodUpdate(mood);
-    }
-
     const greeting = getTimeOfDayGreeting();
-    const mostUsedTool = tools.find(t => t.key === mostUsedToolKey);
-    const firstName = currentUser?.displayName?.split(' ')[0] || 'User';
-    const tagline = useMemo(() => taglines[Math.floor(Math.random() * taglines.length)], []);
+    const firstName = currentUser?.displayName?.split(' ')[0] || 'Learner';
 
-    if (loading) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                <p className="text-slate-400 animate-pulse">Loading your personalized dashboard...</p>
-            </div>
-        )
-    }
+    // Derived Data
+    const todaysTasks = assignments.filter(a => {
+        const due = new Date(a.dueAt);
+        const now = new Date();
+        const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 2 && a.status !== 'submitted';
+    }).slice(0, 5); // Top 5 urgent
+
+    const recentGraded = assignments.filter(a => a.status === 'graded').slice(0, 3);
+    const overallMastery = mastery.length > 0
+        ? Math.round(mastery.reduce((acc, curr) => acc + curr.score, 0) / mastery.length)
+        : 0;
+
+    // Find a weak topic
+    const weakTopic = mastery.sort((a, b) => a.score - b.score)[0];
+
+    if (loading) return <div className="p-8 text-center text-slate-400">Loading your space...</div>;
 
     return (
-        <div className="space-y-8">
-            <PageHeader title={`${greeting}, ${firstName}!`} subtitle={tagline} />
-
-            {/* --- ADAPTIVE WIDGET AREA --- */}
-            {progress && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* If Level is low (Struggling/New), show Focus Coach */}
-                    {progress.level <= 2 && (
-                        <FocusCoachWidget
-                            recommendedTask="Complete Introduction to React Quiz"
-                            durationMins={15}
-                            onStart={() => navigate('/quizzes')}
-                        />
-                    )}
-
-                    {/* If Level is high (Topper), show Challenge */}
-                    {progress.level > 5 && (
-                        <ChallengeWidget
-                            topic="Advanced State Management"
-                            xpReward={150}
-                            onAccept={() => navigate('/quizzes')}
-                        />
-                    )}
-                    {/* Standard users simply see the Goal Widget below */}
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
-                        <h2 className="text-2xl font-bold text-slate-100 mb-2 flex items-center justify-center">
-                            <Zap className="w-6 h-6 mr-3 text-yellow-400" />
-                            Enter a Study Room
-                        </h2>
-                        <p className="text-slate-400 mb-6 max-w-xl mx-auto">Create or join a room to collaborate with friends, chat with an AI study buddy, and hold each other accountable.</p>
-                        <Button onClick={() => navigate('/study-lobby')} className="px-8 py-4 text-lg">
-                            <Users className="w-5 h-5 mr-2" />
-                            Go to Study Lobby
-                        </Button>
+        <div className="space-y-6 max-w-7xl mx-auto">
+            {/* --- HEADER SECTION --- */}
+            <ScrollReveal>
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 rounded-2xl ring-1 ring-slate-700 shadow-xl">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-white tracking-tight">
+                                {greeting}, {firstName} <span className="text-2xl">👋</span>
+                            </h1>
+                            <p className="text-slate-400 mt-1 flex items-center gap-2 text-sm">
+                                <span className="bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">
+                                    {currentUser?.university || 'University Student'}
+                                </span>
+                                {currentUser?.primarySubject && <span>• {currentUser.primarySubject}</span>}
+                            </p>
+                        </div>
                     </div>
 
-                    <div>
-                        {mostUsedTool && (
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-bold text-slate-100 mb-4 flex items-center"><Star className="w-6 h-6 mr-3 text-yellow-400" /> Quick Access</h2>
-                                <Link to={mostUsedTool.href} className="group block p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl hover:bg-slate-700/80 transition-all duration-300 ring-2 ring-violet-500 shadow-lg shadow-violet-500/10">
-                                    <div className="flex items-center space-x-4">
-                                        <div className={`p-3 rounded-lg ${mostUsedTool.bgColor}`}>
-                                            <mostUsedTool.icon className={`w-6 h-6 ${mostUsedTool.color}`} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-slate-100">{mostUsedTool.name}</h3>
-                                            <p className="mt-1 text-sm text-slate-400">{mostUsedTool.description}</p>
-                                        </div>
-                                        <ArrowRight className="ml-auto w-5 h-5 text-slate-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-violet-400" />
-                                    </div>
-                                </Link>
+                    {/* Status Strip */}
+                    <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-700/50 pt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-violet-500/20 rounded-xl text-violet-300 ring-1 ring-violet-500/30">
+                                <Layout className="w-5 h-5 font-bold" />
                             </div>
-                        )}
-                        <h2 className="text-2xl font-bold text-slate-100 mb-4">Your AI Toolkit</h2>
-                        <ToolsGrid />
-                    </div>
-                </div>
-
-                <div className="space-y-8">
-                    <GoalsWidget />
-                    {showMoodCheckin && <MoodCheckin onMoodSelect={onMoodSelected} />}
-                    {moodSuggestion && (
-                        <div className="bg-slate-800/50 p-4 rounded-xl ring-1 ring-slate-700 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
-                            <Sparkles className="text-sky-400 w-8 h-8 flex-shrink-0" />
                             <div>
-                                <h4 className="font-semibold text-lg text-sky-300">Smart Suggestion</h4>
-                                <p className="text-slate-100">{moodSuggestion}</p>
+                                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Today's Plan</p>
+                                <p className="text-xl font-bold text-slate-100">{todaysTasks.length} Tasks</p>
                             </div>
                         </div>
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-300 ring-1 ring-emerald-500/30">
+                                <Brain className="w-5 h-5 font-bold" />
+                            </div>
+                            <div>
+                                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Overall Mastery</p>
+                                <p className="text-xl font-bold text-slate-100">{overallMastery}% Avg.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-500/20 rounded-xl text-amber-300 ring-1 ring-amber-500/30">
+                                <Zap className="w-5 h-5 font-bold" />
+                            </div>
+                            <div>
+                                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Learning Streak</p>
+                                <p className="text-xl font-bold text-slate-100">{progress?.streak || 0} Days</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ScrollReveal>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* --- COLUMN 1: TODAY'S FOCUS --- */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Today's Tasks Widget */}
+                    <ScrollReveal delay={0.1}>
+                        <div className="bg-slate-800/50 rounded-xl p-0 ring-1 ring-slate-700 overflow-hidden">
+                            <div className="p-5 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/80">
+                                <h3 className="font-bold text-slate-100 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-sky-400" /> Today's Tasks
+                                </h3>
+                                <Link to="/assignments" className="text-xs text-violet-400 hover:text-violet-300 font-medium">View All</Link>
+                            </div>
+
+                            <div className="divide-y divide-slate-700/50">
+                                {todaysTasks.length === 0 ? (
+                                    <div className="p-8 text-center">
+                                        <p className="text-slate-400 mb-2">You're all caught up!</p>
+                                        <Button onClick={() => navigate('/quizzes')} variant="outline" size="sm">Start a Practice Quiz</Button>
+                                    </div>
+                                ) : (
+                                    todaysTasks.map(task => (
+                                        <div key={task._id} className="p-4 hover:bg-slate-700/30 transition-colors flex items-center justify-between group">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-2 h-10 rounded-full ${task.type === 'quiz' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
+                                                <div>
+                                                    <h4 className="font-semibold text-slate-200 group-hover:text-violet-300 transition-colors">{task.title}</h4>
+                                                    <p className="text-xs text-slate-400 flex items-center gap-2 mt-1">
+                                                        <span className="uppercase tracking-wide font-bold">{task.type}</span>
+                                                        <span>•</span>
+                                                        <span>Due {new Date(task.dueAt).toLocaleDateString()}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {task.status === 'pending' || !task.status ? (
+                                                    <span className="text-xs bg-amber-500/10 text-amber-500 px-2 py-1 rounded border border-amber-500/20">ToDo</span>
+                                                ) : (
+                                                    <span className="text-xs bg-sky-500/10 text-sky-500 px-2 py-1 rounded border border-sky-500/20 capitalize">{task.status}</span>
+                                                )}
+                                                <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => navigate(`/assignments/${task._id}`)}>
+                                                    <ArrowRight size={18} />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </ScrollReveal>
+
+                    {/* Upcoming Classes (Placeholder) */}
+                    <ScrollReveal delay={0.2}>
+                        <div className="bg-slate-800/50 rounded-xl p-5 ring-1 ring-slate-700">
+                            <h3 className="font-bold text-slate-100 flex items-center gap-2 mb-4">
+                                <Clock className="w-5 h-5 text-emerald-400" /> Upcoming Classes
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border-l-4 border-slate-600 opacity-60">
+                                    <div>
+                                        <p className="font-medium text-slate-300">No classes scheduled for today.</p>
+                                        <p className="text-xs text-slate-500">Check back later for updates.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ScrollReveal>
+
+                </div>
+
+                {/* --- COLUMN 2: PERFORMANCE & INSIGHTS --- */}
+                <div className="space-y-6">
+
+                    {/* Mastery Card */}
+                    <ScrollReveal delay={0.3}>
+                        <div className="bg-slate-900/50 rounded-xl p-5 ring-1 ring-slate-700 backdrop-blur-sm">
+                            <h3 className="font-bold text-slate-100 flex items-center gap-2 mb-4">
+                                <Trophy className="w-5 h-5 text-yellow-400" /> Top Subjects
+                            </h3>
+                            <div className="space-y-4">
+                                {courses.slice(0, 3).map(course => {
+                                    // Mock data binding for now until course-mastery linkage is tight
+                                    const courseMastery = 65 + Math.floor(Math.random() * 25);
+                                    return (
+                                        <div key={course.id}>
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="text-slate-300 font-medium">{course.name}</span>
+                                                <span className="text-slate-400">{courseMastery}%</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-indigo-500" style={{ width: `${courseMastery}%` }}></div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            <Button className="w-full mt-4 text-xs" variant="ghost" onClick={() => navigate('/progress')}>View Full Analytics</Button>
+                        </div>
+                    </ScrollReveal>
+
+                    {/* AI Coach Suggestion */}
+                    {weakTopic && (
+                        <ScrollReveal delay={0.4}>
+                            <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-xl p-6 shadow-lg text-white">
+                                <div className="flex items-start gap-3 mb-3">
+                                    <div className="p-2 bg-white/20 rounded-lg">
+                                        <Brain className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h3 className="font-bold text-lg">Focus Area</h3>
+                                </div>
+                                <p className="text-indigo-100 text-sm mb-4 leading-relaxed">
+                                    You seem a bit shaky on <strong>{weakTopic.topic}</strong> ({weakTopic.score}%). A quick 5-minute quiz could help fix that!
+                                </p>
+                                <Button onClick={() => navigate('/quizzes')} className="w-full bg-white text-indigo-600 hover:bg-slate-100 border-none font-bold shadow-none">
+                                    Practice Now
+                                </Button>
+                            </div>
+                        </ScrollReveal>
                     )}
-                    <ProductivityInsights />
-                    <MyCourses />
+
+                    {/* Recently Graded */}
+                    <ScrollReveal delay={0.5}>
+                        <div className="bg-slate-800/50 rounded-xl p-5 ring-1 ring-slate-700">
+                            <h3 className="font-bold text-slate-100 flex items-center gap-2 mb-4">
+                                <CheckCircle className="w-5 h-5 text-teal-400" /> Recently Graded
+                            </h3>
+                            <div className="space-y-3">
+                                {recentGraded.length === 0 ? <p className="text-sm text-slate-400">No grades yet.</p> : recentGraded.map(item => (
+                                    <div key={item._id} className="text-sm border-l-2 border-slate-600 pl-3 py-1">
+                                        <p className="text-slate-200 font-medium">{item.title}</p>
+                                        <p className="text-slate-400 flex justify-between mt-1">
+                                            <span>Score: <span className="text-white font-bold">{item.submission?.grade || 0}/{item.points}</span></span>
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </ScrollReveal>
+
+                    {/* Quick Access Grid */}
+                    <ScrollReveal delay={0.6}>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Link to="/notes" className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center ring-1 ring-slate-700 transition-colors">
+                                <FileText className="w-6 h-6 mx-auto mb-2 text-sky-400" />
+                                <span className="text-xs font-semibold text-slate-300">Notes</span>
+                            </Link>
+                            <Link to="/tutor" className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center ring-1 ring-slate-700 transition-colors">
+                                <MessageSquare className="w-6 h-6 mx-auto mb-2 text-violet-400" />
+                                <span className="text-xs font-semibold text-slate-300">AI Tutor</span>
+                            </Link>
+                        </div>
+                    </ScrollReveal>
+
                 </div>
             </div>
         </div>
     );
 };
 
-export default StudyHub;
+export default LearnerHome;

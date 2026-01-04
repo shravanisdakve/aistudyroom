@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 import { type Course } from '../types';
+export type { Course };
 
 const API_URL = 'http://localhost:5000/api/courses';
 const getUserId = () => {

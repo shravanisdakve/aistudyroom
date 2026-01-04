@@ -6,7 +6,6 @@ export interface Mastery {
     lastUpdated: number;
 }
 
-import { auth } from '../firebase';
 import { type TopicMastery } from '../types';
 import axios from 'axios';
 import { auth } from '../firebase';
