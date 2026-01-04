@@ -5,33 +5,33 @@ import { Clipboard, Check, X } from 'lucide-react';
 
 // PageHeader Component
 interface PageHeaderProps {
-  title: string;
-  subtitle: string;
+    title: string;
+    subtitle: string;
 }
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle }) => (
-  <div className="mb-8">
-    <h1 className="text-4xl font-extrabold text-white tracking-tight">{title}</h1>
-    <p className="mt-2 text-slate-400 text-lg">{subtitle}</p>
-  </div>
+    <div className="mb-8">
+        <h1 className="text-4xl font-extrabold text-white tracking-tight">{title}</h1>
+        <p className="mt-2 text-slate-400 text-lg">{subtitle}</p>
+    </div>
 );
 
 // Button Component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  isLoading?: boolean;
+    isLoading?: boolean;
 }
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, children, isLoading, ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        className={`inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 focus:ring-offset-slate-900 disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors duration-200 ${className}`}
-        disabled={isLoading}
-        {...props}
-      >
-        {isLoading ? <Spinner /> : children}
-      </button>
-    );
-  }
+    ({ className, children, isLoading, ...props }, ref) => {
+        return (
+            <button
+                ref={ref}
+                className={`inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 focus:ring-offset-slate-900 disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors duration-200 ${className}`}
+                disabled={isLoading}
+                {...props}
+            >
+                {isLoading ? <Spinner /> : children}
+            </button>
+        );
+    }
 );
 
 // Input Component
@@ -39,9 +39,9 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     ({ className, ...props }, ref) => {
         return (
             <input
-            ref={ref}
-            className={`w-full bg-slate-800 border border-slate-700 rounded-md py-3 px-4 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors duration-200 ${className}`}
-            {...props}
+                ref={ref}
+                className={`w-full bg-slate-800 border border-slate-700 rounded-md py-3 px-4 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors duration-200 ${className}`}
+                {...props}
             />
         );
     }
@@ -52,9 +52,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
     ({ className, ...props }, ref) => {
         return (
             <textarea
-            ref={ref}
-            className={`w-full bg-slate-800 border border-slate-700 rounded-md py-3 px-4 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors duration-200 ${className}`}
-            {...props}
+                ref={ref}
+                className={`w-full bg-slate-800 border border-slate-700 rounded-md py-3 px-4 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors duration-200 ${className}`}
+                {...props}
             />
         );
     }
@@ -65,9 +65,9 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
     ({ className, ...props }, ref) => {
         return (
             <select
-            ref={ref}
-            className={`w-full bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors duration-200 ${className}`}
-            {...props}
+                ref={ref}
+                className={`w-full bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors duration-200 ${className}`}
+                {...props}
             />
         );
     }
@@ -83,7 +83,7 @@ export const Spinner: React.FC = () => (
 
 // CodeBlock Component
 interface CodeBlockProps {
-  code: string;
+    code: string;
 }
 export const CodeBlock: React.FC<CodeBlockProps> = ({ code }) => {
     const [copied, setCopied] = useState(false);
@@ -120,14 +120,14 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
     if (!isOpen) return null;
 
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300"
             aria-labelledby="modal-title"
             role="dialog"
             aria-modal="true"
             onClick={onClose}
         >
-            <div 
+            <div
                 className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md m-4 ring-1 ring-slate-700 p-6 transform transition-all duration-300 scale-95 opacity-0 animate-in"
                 onClick={(e) => e.stopPropagation()}
                 style={{ animationName: 'modal-enter', animationDuration: '0.2s', animationFillMode: 'forwards' }}
@@ -151,3 +151,10 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
         </div>
     );
 };
+
+// Card Component
+export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => (
+    <div className={`bg-slate-800 rounded-lg shadow ring-1 ring-slate-700/50 ${className}`} {...props}>
+        {children}
+    </div>
+);

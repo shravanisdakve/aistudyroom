@@ -96,7 +96,7 @@ export const summarizeAudioFromBase64 = async (base64Data: string, mimeType: str
     const textPart = {
         text: "First, transcribe the provided audio accurately. Second, based on the transcription, provide a concise summary of the key points and topics discussed. Use bullet points for the summary."
     };
-    
+
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts: [textPart, audioPart] },
@@ -157,7 +157,7 @@ export const generateQuizQuestion = async (context: string): Promise<string> => 
             }
         }
     });
-    
+
     return response.text;
 };
 
@@ -194,7 +194,7 @@ export const generateFlashcards = async (context: string): Promise<string> => {
             }
         }
     });
-    
+
     return response.text;
 };
 
@@ -202,9 +202,9 @@ export const generateFlashcards = async (context: string): Promise<string> => {
  * Gets a smart suggestion based on the user's reported mood.
  */
 export const getSuggestionForMood = async (mood: string): Promise<string> => {
-  console.log(`Getting AI suggestion for mood: ${mood}`);
-  
-  const prompt = `A user in my learning app just reported their mood as '${mood}'.
+    console.log(`Getting AI suggestion for mood: ${mood}`);
+
+    const prompt = `A user in my learning app just reported their mood as '${mood}'.
 Provide one, short (1-2 sentences) and encouraging, actionable suggestion.
 - If mood is 'Happy' or 'Calm', suggest a good study task.
 - If mood is 'Overwhelmed', suggest a way to get clarity.
@@ -214,30 +214,18 @@ Example for 'Angry': 'Feeling frustrated? Try taking a short 5-minute walk to cl
 Example for 'Overwhelmed': 'Not sure what to do next? Try breaking down your main goal into smaller steps or ask the AI chat for ideas.'
 Example for 'Happy': 'Great! Now is a perfect time to tackle that challenging topic you've been putting off.'`;
 
-  try {
-    // --- REPLACE WITH YOUR ACTUAL GEMINI API CALL ---
-    // This will depend on how you set up your Gemini client (e.g., `genAI.getGenerativeModel`)
-    
-    // const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    // const result = await model.generateContent(prompt);
-    // const response = await result.response;
-    // return response.text();
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
 
-    // --- MOCK RESPONSE (Remove this block) ---
-    await new Promise(res => setTimeout(res, 500)); // Simulate network delay
-    if (mood === 'Happy') return "You're feeling good! Now is a great time to tackle that next task on your goal list.";
-    if (mood === 'Calm') return "Feeling calm and focused is the perfect state for a deep study session.";
-    if (mood ==='Overwhelmed') return "Not sure what's next? Try asking the AI chat for ideas or review your notes from yesterday.";
-    if (mood === 'Sad') return "It's okay to feel down. How about listening to some focus music from the music player?";
-    if (mood === 'Angry') return "Frustration is tough. A quick 5-minute break or some deep breaths can make a big difference.";
-    // --- END MOCK RESPONSE ---
+        return response.text;
 
-    return "Let's make today productive!";
-
-  } catch (error) {
-    console.error("Error in getSuggestionForMood:", error);
-    return "Could not get an AI suggestion at this time.";
-  }
+    } catch (error) {
+        console.error("Error in getSuggestionForMood:", error);
+        return "I'm here for you. Let's take a deep breath and focus on one small thing.";
+    }
 };
 
 // --- GOAL BREAKDOWN SERVICE ---
@@ -258,6 +246,6 @@ Example for "Learn React": ["Understand JSX syntax", "Learn about components and
             }
         }
     });
-    
+
     return response.text;
 };

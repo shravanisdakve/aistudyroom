@@ -1,72 +1,49 @@
+import axios from 'axios';
 import { type Course } from '../types';
+import { auth } from '../firebase'; // Need auth to get userId
 
-// Mock database with localStorage persistence
-const getMockCourses = (): Course[] => {
+const API_URL = 'http://localhost:5000/api/courses';
+
+export const getCourses = async (): Promise<Course[]> => {
     try {
-        const courses = localStorage.getItem('mockCourses');
-        if (courses) {
-            return JSON.parse(courses);
-        } else {
-            const defaultCourses: Course[] = [
-                { id: 'mock_course_1', name: 'Introduction to AI', color: '#8b5cf6' },
-                { id: 'mock_course_2', name: 'Data Structures', color: '#3b82f6' },
-                { id: 'mock_course_3', name: 'Web Development', color: '#10b981' },
-            ];
-            setMockCourses(defaultCourses);
-            return defaultCourses;
-        }
+        const userId = auth?.currentUser?.uid;
+        if (!userId) return []; // Should handle better, but for now return empty
+
+        const response = await axios.get(API_URL, { params: { userId } });
+        // Map _id to id for frontend compatibility
+        return response.data.map((c: any) => ({ ...c, id: c._id }));
     } catch (error) {
-        console.error("Error reading courses from localStorage", error);
+        console.error("Error fetching courses:", error);
         return [];
     }
 };
 
-const setMockCourses = (courses: Course[]) => {
+export const addCourse = async (name: string): Promise<Course | null> => {
     try {
-        localStorage.setItem('mockCourses', JSON.stringify(courses));
+        const userId = auth?.currentUser?.uid;
+        if (!userId) throw new Error("User not authenticated");
+
+        const response = await axios.post(API_URL, { userId, name });
+        const newCourse = response.data;
+        return { ...newCourse, id: newCourse._id };
     } catch (error) {
-        console.error("Error saving courses to localStorage", error);
+        console.error("Error adding course:", error);
+        return null;
     }
 };
 
-const generateColor = (existingColors: string[] = []): string => {
-    const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
-    const availableColors = colors.filter(c => !existingColors.includes(c));
-    return availableColors.length > 0 ? availableColors[0] : colors[Math.floor(Math.random() * colors.length)];
-}
-
-export const getCourses = async (): Promise<Course[]> => {
-    console.log("Fetching courses from mock service...");
-    return Promise.resolve(getMockCourses());
+export const deleteCourse = async (id: string): Promise<void> => {
+    try {
+        await axios.delete(`${API_URL}/${id}`);
+    } catch (error) {
+        console.error("Error deleting course:", error);
+    }
 };
 
 export const getCourse = async (id: string): Promise<Course | null> => {
-    console.log("Fetching course from mock service:", id);
-    const mockCourses = getMockCourses();
-    const course = mockCourses.find(c => c.id === id);
-    return Promise.resolve(course || null);
-};
-
-export const addCourse = async (name: string): Promise<Course | null> => {
-    console.log("Adding course to mock service:", name);
-    const mockCourses = getMockCourses();
-    const existingColors = mockCourses.map(c => c.color);
-    const newCourse: Course = {
-        id: `mock_course_${Date.now()}`,
-        name,
-        color: generateColor(existingColors),
-    };
-    const updatedCourses = [...mockCourses, newCourse];
-    setMockCourses(updatedCourses);
-    console.log("Added course to mock service:", newCourse);
-    return Promise.resolve(newCourse);
-};
-
-export const deleteCourse = async (id: string): Promise<void> => {
-    console.log("Deleting course from mock service:", id);
-    const mockCourses = getMockCourses();
-    const updatedCourses = mockCourses.filter(c => c.id !== id);
-    setMockCourses(updatedCourses);
-    console.log("Deleted course from mock service:", id);
-    return Promise.resolve();
+    // This might be tricky if we don't need a specific endpoint, 
+    // but usually getCourses() caches it or we add a get-one endpoint.
+    // For now, let's just fetch all and find (or add endpoint later).
+    const courses = await getCourses();
+    return courses.find(c => c.id === id) || null;
 };

@@ -6,8 +6,11 @@ import { type Course, type Mood as MoodType } from '../types';
 import { getTimeOfDayGreeting, getMostUsedTool } from '../services/personalizationService';
 import { getProductivityReport } from '../services/analyticsService';
 import { getCourses, addCourse, deleteCourse } from '../services/courseService';
+import { getUserProgress, type UserProgress } from '../services/progressService'; // Import progress
 import GoalsWidget from '../components/GoalsWidget';
 import MoodCheckin from '../components/MoodCheckin'; // Import new MoodCheckin
+import { FocusCoachWidget } from '../components/widgets/FocusCoachWidget'; // Adaptive Widget
+import { ChallengeWidget } from '../components/widgets/ChallengeWidget'; // Adaptive Widget
 import { getSuggestionForMood } from '../services/geminiService'; // Import AI suggestion service
 import {
     MessageSquare, Share2, FileText, Code, ArrowRight,
@@ -37,9 +40,9 @@ const ProductivityInsights: React.FC = () => {
                 const fetchedReport = await getProductivityReport();
                 setReport(fetchedReport);
             } catch (error) {
-                 console.error("Error fetching productivity report:", error);
+                console.error("Error fetching productivity report:", error);
             } finally {
-                 setIsLoading(false);
+                setIsLoading(false);
             }
         };
         fetchReport();
@@ -49,50 +52,48 @@ const ProductivityInsights: React.FC = () => {
         return (
             <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
                 <p className="text-slate-400">Loading weekly snapshot...</p>
-                {/* Optional: Add a Spinner here */}
-                {/* <Spinner /> */}
             </div>
         );
     }
 
     if (!report) return (
-         <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
-             <p className="text-slate-400">Could not load productivity data.</p>
-         </div>
+        <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
+            <p className="text-slate-400">Could not load productivity data.</p>
+        </div>
     );
 
     const hasData = report.totalStudyTime > 0 || report.totalQuizzes > 0;
 
     return (
-      <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700">
-        <h3 className="text-xl font-bold text-slate-100 flex items-center mb-4">
-            <BarChart className="w-6 h-6 mr-3 text-violet-400" /> Weekly Snapshot
-        </h3>
-        {!hasData ? (
-             <p className="text-center text-slate-400 py-4">Start a study session or take a quiz to see your insights here.</p>
-        ) : (
-        <div className="space-y-4">
-             <div className="flex justify-between items-center text-sm bg-slate-800 p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-slate-400" />
-                    <span className="font-medium text-slate-300">Total Study Time</span>
+        <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700">
+            <h3 className="text-xl font-bold text-slate-100 flex items-center mb-4">
+                <BarChart className="w-6 h-6 mr-3 text-violet-400" /> Weekly Snapshot
+            </h3>
+            {!hasData ? (
+                <p className="text-center text-slate-400 py-4">Start a study session or take a quiz to see your insights here.</p>
+            ) : (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center text-sm bg-slate-800 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            <Clock size={16} className="text-slate-400" />
+                            <span className="font-medium text-slate-300">Total Study Time</span>
+                        </div>
+                        {/* Make sure formatSeconds is defined or imported */}
+                        <span className="font-mono text-white">{formatSeconds(report.totalStudyTime)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm bg-slate-800 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            <Brain size={16} className="text-slate-400" />
+                            <span className="font-medium text-slate-300">Quiz Accuracy</span>
+                        </div>
+                        <span className="font-mono text-white">{report.quizAccuracy}%</span>
+                    </div>
                 </div>
-                {/* Make sure formatSeconds is defined or imported */}
-                <span className="font-mono text-white">{formatSeconds(report.totalStudyTime)}</span>
-            </div>
-             <div className="flex justify-between items-center text-sm bg-slate-800 p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                    <Brain size={16} className="text-slate-400" />
-                    <span className="font-medium text-slate-300">Quiz Accuracy</span>
-                </div>
-                <span className="font-mono text-white">{report.quizAccuracy}%</span>
-            </div>
+            )}
+            <Link to="/insights">
+                <Button className="w-full mt-6 text-sm">View Detailed Insights</Button>
+            </Link>
         </div>
-        )}
-        <Link to="/insights">
-            <Button className="w-full mt-6 text-sm">View Detailed Insights</Button>
-        </Link>
-      </div>
     );
 };
 
@@ -111,9 +112,9 @@ const MyCourses: React.FC = () => {
                 console.log("MyCourses: Fetched courses:", fetchedCourses);
                 setCourses(fetchedCourses);
             } catch (error) {
-                 console.error("Error fetching courses:", error);
+                console.error("Error fetching courses:", error);
             } finally {
-                 setIsLoading(false);
+                setIsLoading(false);
             }
         };
         fetchCourses();
@@ -121,7 +122,7 @@ const MyCourses: React.FC = () => {
 
     const handleAddCourse = async (e: React.FormEvent) => {
         e.preventDefault();
-        if(newCourseName.trim()) {
+        if (newCourseName.trim()) {
             console.log("MyCourses: Adding course:", newCourseName);
             try {
                 const newCourse = await addCourse(newCourseName.trim());
@@ -132,8 +133,8 @@ const MyCourses: React.FC = () => {
                 setNewCourseName('');
                 setIsAdding(false);
             } catch (error) {
-                 console.error("Error adding course:", error);
-                 // Optionally show error to user
+                console.error("Error adding course:", error);
+                // Optionally show error to user
             }
         }
     }
@@ -145,8 +146,8 @@ const MyCourses: React.FC = () => {
             setCourses(prev => prev.filter(c => c.id !== id));
             console.log("MyCourses: Deleted course:", id);
         } catch (error) {
-             console.error("Error deleting course:", error);
-             // Optionally show error to user
+            console.error("Error deleting course:", error);
+            // Optionally show error to user
         }
     }
 
@@ -184,7 +185,7 @@ const MyCourses: React.FC = () => {
                         autoFocus
                     />
                     <Button type="submit" className="px-3 py-2 text-sm">Add</Button>
-                     <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="px-3 py-2 text-sm text-slate-400">Cancel</Button> {/* Added Cancel */}
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="px-3 py-2 text-sm text-slate-400">Cancel</Button> {/* Added Cancel */}
                 </form>
             ) : (
                 <Button onClick={() => setIsAdding(true)} className="w-full mt-4 bg-slate-700/50 hover:bg-slate-700 text-sm shadow-none">
@@ -197,9 +198,9 @@ const MyCourses: React.FC = () => {
 }
 
 const tools = [
-  { key: 'tutor', name: 'AI Tutor', href: '/tutor', description: 'Practice concepts with your AI tutor.', icon: MessageSquare, color: 'text-sky-400', bgColor: 'bg-sky-900/50' },
-  { key: 'summaries', name: 'Summaries Generator', href: '/notes', description: 'Generate summaries from your notes.', icon: FileText, color: 'text-emerald-400', bgColor: 'bg-emerald-900/50' },
-  { key: 'quizzes', name: 'Quizzes & Practice', href: '/quizzes', description: 'Test your knowledge with practice quizzes.', icon: Brain, color: 'text-rose-400', bgColor: 'bg-rose-900/50' },
+    { key: 'tutor', name: 'AI Tutor', href: '/tutor', description: 'Practice concepts with your AI tutor.', icon: MessageSquare, color: 'text-sky-400', bgColor: 'bg-sky-900/50' },
+    { key: 'summaries', name: 'Summaries Generator', href: '/notes', description: 'Generate summaries from your notes.', icon: FileText, color: 'text-emerald-400', bgColor: 'bg-emerald-900/50' },
+    { key: 'quizzes', name: 'Quizzes & Practice', href: '/quizzes', description: 'Test your knowledge with practice quizzes.', icon: Brain, color: 'text-rose-400', bgColor: 'bg-rose-900/50' },
 ];
 
 interface ToolCardProps {
@@ -248,116 +249,150 @@ const taglines = [
 const SESSION_MOOD_CHECKIN_KEY = 'nexusMoodCheckedInSession'; // Key for sessionStorage
 
 const StudyHub: React.FC = () => {
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
-  const [mostUsedToolKey, setMostUsedToolKey] = useState<string | null>(null);
-  const [showMoodCheckin, setShowMoodCheckin] = useState(() => {
-      try {
-          // Check if the flag exists in sessionStorage
-          return !sessionStorage.getItem(SESSION_MOOD_CHECKIN_KEY);
-      } catch (error) {
-          console.error("Error accessing sessionStorage:", error);
-          return true; // Default to showing if sessionStorage is unavailable
-      }
-  });
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null); // New state for AI suggestion
-  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false); // New state for loading
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
+    const [mostUsedToolKey, setMostUsedToolKey] = useState<string | null>(null);
+    const [userProgress, setUserProgress] = useState<UserProgress | null>(null); // State for progress
+    const [showMoodCheckin, setShowMoodCheckin] = useState(() => {
+        try {
+            // Check if the flag exists in sessionStorage
+            return !sessionStorage.getItem(SESSION_MOOD_CHECKIN_KEY);
+        } catch (error) {
+            console.error("Error accessing sessionStorage:", error);
+            return true; // Default to showing if sessionStorage is unavailable
+        }
+    });
+    const [aiSuggestion, setAiSuggestion] = useState<string | null>(null); // New state for AI suggestion
+    const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false); // New state for loading
 
-  useEffect(() => {
-    const fetchMostUsedTool = async () => {
-        const toolKey = await getMostUsedTool();
-        setMostUsedToolKey(toolKey);
-    };
-    fetchMostUsedTool();
+    useEffect(() => {
+        const fetchMostUsedTool = async () => {
+            const toolKey = await getMostUsedTool();
+            setMostUsedToolKey(toolKey);
+        };
+        fetchMostUsedTool();
 
-  }, []);
+        // Fetch user progress for adaptive dashboard
+        const fetchProgress = async () => {
+            if (currentUser) {
+                const p = await getUserProgress(currentUser.uid);
+                setUserProgress(p);
+            }
+        }
+        fetchProgress();
 
-  const handleMoodSelected = async (mood: MoodType['mood']) => { // Modified to accept mood
-      setShowMoodCheckin(false);
-      try {
-          sessionStorage.setItem(SESSION_MOOD_CHECKIN_KEY, 'true'); // Mark as checked in for this session
-      } catch (error) {
-          console.error("Error setting sessionStorage:", error);
-      }
-      setIsLoadingSuggestion(true);
-      setAiSuggestion(null); // Clear old suggestion
-      
-      try {
-        const suggestion = await getSuggestionForMood(mood);
-        setAiSuggestion(suggestion);
-      } catch (error) {
-        console.error("Error getting AI suggestion:", error);
-        setAiSuggestion("Couldn't get a suggestion right now.");
-      } finally {
-        setIsLoadingSuggestion(false);
-      }
-  }
+    }, [currentUser]);
 
-  const greeting = getTimeOfDayGreeting();
-  const mostUsedTool = tools.find(t => t.key === mostUsedToolKey);
-  const firstName = currentUser?.displayName?.split(' ')[0] || 'User';
-  const tagline = useMemo(() => taglines[Math.floor(Math.random() * taglines.length)], []);
+    const handleMoodSelected = async (mood: MoodType['mood']) => { // Modified to accept mood
+        setShowMoodCheckin(false);
+        try {
+            sessionStorage.setItem(SESSION_MOOD_CHECKIN_KEY, 'true'); // Mark as checked in for this session
+        } catch (error) {
+            console.error("Error setting sessionStorage:", error);
+        }
+        setIsLoadingSuggestion(true);
+        setAiSuggestion(null); // Clear old suggestion
 
-  return (
-    <div className="space-y-8">
-        <PageHeader title={`${greeting}, ${firstName}!`} subtitle={tagline} />
+        try {
+            const suggestion = await getSuggestionForMood(mood);
+            setAiSuggestion(suggestion);
+        } catch (error) {
+            console.error("Error getting AI suggestion:", error);
+            setAiSuggestion("Couldn't get a suggestion right now.");
+        } finally {
+            setIsLoadingSuggestion(false);
+        }
+    }
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-            <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
-                <h2 className="text-2xl font-bold text-slate-100 mb-2 flex items-center justify-center">
-                    <Zap className="w-6 h-6 mr-3 text-yellow-400" />
-                    Enter a Study Room
-                </h2>
-                <p className="text-slate-400 mb-6 max-w-xl mx-auto">Create or join a room to collaborate with friends, chat with an AI study buddy, and hold each other accountable.</p>
-                <Button onClick={() => navigate('/study-lobby')} className="px-8 py-4 text-lg">
-                    <Users className="w-5 h-5 mr-2" />
-                    Go to Study Lobby
-                </Button>
-            </div>
+    const greeting = getTimeOfDayGreeting();
+    const mostUsedTool = tools.find(t => t.key === mostUsedToolKey);
+    const firstName = currentUser?.displayName?.split(' ')[0] || 'User';
+    const tagline = useMemo(() => taglines[Math.floor(Math.random() * taglines.length)], []);
 
-            <div>
-                {mostUsedTool && (
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-slate-100 mb-4 flex items-center"><Star className="w-6 h-6 mr-3 text-yellow-400" /> Quick Access</h2>
-                        <Link to={mostUsedTool.href} className="group block p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl hover:bg-slate-700/80 transition-all duration-300 ring-2 ring-violet-500 shadow-lg shadow-violet-500/10">
-                             <div className="flex items-center space-x-4">
-                                <div className={`p-3 rounded-lg ${mostUsedTool.bgColor}`}>
-                                    <mostUsedTool.icon className={`w-6 h-6 ${mostUsedTool.color}`} />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-100">{mostUsedTool.name}</h3>
-                                    <p className="mt-1 text-sm text-slate-400">{mostUsedTool.description}</p>
-                                </div>
-                                <ArrowRight className="ml-auto w-5 h-5 text-slate-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-violet-400" />
-                            </div>
-                        </Link>
+    return (
+        <div className="space-y-8">
+            <PageHeader title={`${greeting}, ${firstName}!`} subtitle={tagline} />
+
+            {/* --- ADAPTIVE WIDGET AREA --- */}
+            {userProgress && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* If Level is low (Struggling/New), show Focus Coach */}
+                    {userProgress.level <= 2 && (
+                        <FocusCoachWidget
+                            recommendedTask="Complete Introduction to React Quiz"
+                            durationMins={15}
+                            onStart={() => navigate('/quizzes')}
+                        />
+                    )}
+
+                    {/* If Level is high (Topper), show Challenge */}
+                    {userProgress.level > 5 && (
+                        <ChallengeWidget
+                            topic="Advanced State Management"
+                            xpReward={150}
+                            onAccept={() => navigate('/quizzes')}
+                        />
+                    )}
+                    {/* Standard users simply see the Goal Widget below */}
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    <div className="bg-slate-800/50 rounded-xl p-6 ring-1 ring-slate-700 text-center">
+                        <h2 className="text-2xl font-bold text-slate-100 mb-2 flex items-center justify-center">
+                            <Zap className="w-6 h-6 mr-3 text-yellow-400" />
+                            Enter a Study Room
+                        </h2>
+                        <p className="text-slate-400 mb-6 max-w-xl mx-auto">Create or join a room to collaborate with friends, chat with an AI study buddy, and hold each other accountable.</p>
+                        <Button onClick={() => navigate('/study-lobby')} className="px-8 py-4 text-lg">
+                            <Users className="w-5 h-5 mr-2" />
+                            Go to Study Lobby
+                        </Button>
                     </div>
-                )}
-                <h2 className="text-2xl font-bold text-slate-100 mb-4">Your AI Toolkit</h2>
-                <ToolsGrid />
-            </div>
-        </div>
 
-         <div className="space-y-8">
-          <GoalsWidget />
-          {showMoodCheckin && <MoodCheckin onMoodSelect={handleMoodSelected} />}
-          {(isLoadingSuggestion || aiSuggestion) && (
-            <div className="bg-slate-800/50 p-4 rounded-xl ring-1 ring-slate-700 flex items-center gap-4">
-              <Sparkles className="text-sky-400 w-8 h-8 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-lg text-sky-300">Smart Suggestion</h4>
-                {isLoadingSuggestion && <p className="text-slate-300">Thinking...</p>}
-                {aiSuggestion && <p className="text-slate-100">{aiSuggestion}</p>}
-              </div>
+                    <div>
+                        {mostUsedTool && (
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-bold text-slate-100 mb-4 flex items-center"><Star className="w-6 h-6 mr-3 text-yellow-400" /> Quick Access</h2>
+                                <Link to={mostUsedTool.href} className="group block p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl hover:bg-slate-700/80 transition-all duration-300 ring-2 ring-violet-500 shadow-lg shadow-violet-500/10">
+                                    <div className="flex items-center space-x-4">
+                                        <div className={`p-3 rounded-lg ${mostUsedTool.bgColor}`}>
+                                            <mostUsedTool.icon className={`w-6 h-6 ${mostUsedTool.color}`} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-100">{mostUsedTool.name}</h3>
+                                            <p className="mt-1 text-sm text-slate-400">{mostUsedTool.description}</p>
+                                        </div>
+                                        <ArrowRight className="ml-auto w-5 h-5 text-slate-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-violet-400" />
+                                    </div>
+                                </Link>
+                            </div>
+                        )}
+                        <h2 className="text-2xl font-bold text-slate-100 mb-4">Your AI Toolkit</h2>
+                        <ToolsGrid />
+                    </div>
+                </div>
+
+                <div className="space-y-8">
+                    <GoalsWidget />
+                    {showMoodCheckin && <MoodCheckin onMoodSelect={handleMoodSelected} />}
+                    {(isLoadingSuggestion || aiSuggestion) && (
+                        <div className="bg-slate-800/50 p-4 rounded-xl ring-1 ring-slate-700 flex items-center gap-4">
+                            <Sparkles className="text-sky-400 w-8 h-8 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-semibold text-lg text-sky-300">Smart Suggestion</h4>
+                                {isLoadingSuggestion && <p className="text-slate-300">Thinking...</p>}
+                                {aiSuggestion && <p className="text-slate-100">{aiSuggestion}</p>}
+                            </div>
+                        </div>
+                    )}
+                    <ProductivityInsights />
+                    <MyCourses />
+                </div>
             </div>
-          )}
-          <ProductivityInsights />
-          <MyCourses />
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default StudyHub;

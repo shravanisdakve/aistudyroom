@@ -19,6 +19,8 @@ import InterviewQuiz from './pages/InterviewQuiz';
 import SudokuGame from './pages/SudokuGame';
 import ZipGame from './pages/ZipGame';
 import SpeedMathGame from './pages/SpeedMathGame';
+import LessonPlanner from './pages/LessonPlanner';
+import AutoGrader from './pages/AutoGrader'; // <-- ADDED IMPORT
 
 
 const AuthLayout: React.FC = () => (
@@ -52,10 +54,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const App: React.FC = () => {
   const { currentUser, loading } = useAuth();
-  
+
   if (loading) {
     return (
-       <div className="w-full h-screen flex items-center justify-center bg-slate-900">
+      <div className="w-full h-screen flex items-center justify-center bg-slate-900">
         <Spinner />
       </div>
     )
@@ -65,8 +67,8 @@ const App: React.FC = () => {
     <HashRouter>
       <Routes>
         {currentUser ? (
-          <Route 
-            path="/*" 
+          <Route
+            path="/*"
             element={
               <MainLayout />
             }
@@ -78,7 +80,9 @@ const App: React.FC = () => {
             <Route path="insights" element={<Insights />} />
             <Route path="notes" element={<Notes />} />
             <Route path="community/:courseId" element={<CourseCommunity />} />
-            <Route path="quizzes" element={<QuizPractice />} /> {/* <-- ADD ROUTE */}
+            <Route path="quizzes" element={<QuizPractice />} />
+            <Route path="lesson-planner" element={<LessonPlanner />} />
+            <Route path="auto-grader" element={<AutoGrader />} /> {/* <-- ADDED ROUTE */}
             <Route path="interview" element={<InterviewQuiz />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="sudoku" element={<SudokuGame />} />
