@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Course = require('../models/Course');
 
-// Get all courses for a user
+// Get all courses for a user (legacy - kept for compatibility)
 router.get('/', async (req, res) => {
     try {
         const { userId } = req.query;
@@ -12,6 +12,47 @@ router.get('/', async (req, res) => {
         res.json(courses);
     } catch (err) {
         res.status(500).send('Server Error');
+    }
+});
+
+// GET /api/courses/teacher/:teacherId - All courses taught by a teacher
+router.get('/teacher/:teacherId', async (req, res) => {
+    try {
+        const courses = await Course.find({ userId: req.params.teacherId });
+        const result = courses.map(c => ({
+            id: c._id,
+            name: c.name,
+            code: c.code,
+            section: c.section || 'A',
+            term: c.term || 'Spring 2026',
+            level: c.level,
+            color: c.color,
+            studentsCount: c.students?.length || 0,
+            description: c.description
+        }));
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+});
+
+// GET /api/courses/student/:studentId - All courses a student is enrolled in
+router.get('/student/:studentId', async (req, res) => {
+    try {
+        const courses = await Course.find({ students: req.params.studentId });
+        const result = courses.map(c => ({
+            id: c._id,
+            name: c.name,
+            code: c.code,
+            level: c.level,
+            color: c.color,
+            teacherId: c.userId
+        }));
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server Error' });
     }
 });
 

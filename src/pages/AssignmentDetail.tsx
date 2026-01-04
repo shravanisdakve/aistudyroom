@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getAssignment, submitAssignment, gradeAssignment, type Assignment } from '../services/assignmentService';
 import {
-    Button, Textarea, PageHeader, Card, Input
+    Button, Textarea, PageHeader, Card, Input, Toast
 } from '../components/ui';
 import { ArrowLeft, Clock, FileText, CheckCircle, AlertCircle, UploadCloud, Users, Award } from 'lucide-react';
 import axios from 'axios';
@@ -17,6 +17,10 @@ const AssignmentDetail: React.FC = () => {
     const [submissionText, setSubmissionText] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+
+    // Toast state
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; visible: boolean }>({ message: '', type: 'info', visible: false });
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => setToast({ message, type, visible: true });
 
     // Grading state
     const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -63,10 +67,10 @@ const AssignmentDetail: React.FC = () => {
             });
             const updated = await getAssignment(assignment._id);
             setAssignment(updated);
-            alert("Assignment submitted successfully!");
+            showToast("Assignment submitted successfully!", "success");
         } catch (error) {
             console.error("Submission failed", error);
-            alert("Failed to submit. Please try again.");
+            showToast("Failed to submit. Please try again.", "error");
         } finally {
             setSubmitting(false);
         }
@@ -87,10 +91,10 @@ const AssignmentDetail: React.FC = () => {
             setSelectedSubmission(null);
             setGradeValue('');
             setFeedbackValue('');
-            alert("Graded successfully!");
+            showToast("Graded successfully!", "success");
         } catch (error) {
             console.error("Grading failed", error);
-            alert("Failed to grade. Please try again.");
+            showToast("Failed to grade. Please try again.", "error");
         } finally {
             setGrading(false);
         }
@@ -249,6 +253,14 @@ const AssignmentDetail: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Toast Notification */}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.visible}
+                onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+            />
         </div>
     );
 };

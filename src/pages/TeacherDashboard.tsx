@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { PageHeader, Card, Button, ScrollReveal } from '../components/ui';
+import { PageHeader, Card, Button, ScrollReveal, DashboardSkeleton, Modal } from '../components/ui';
 import {
     Users, BookOpen, Calendar, Clock, AlertTriangle,
     CheckCircle, MessageSquare, Plus, ArrowRight, Sparkles,
-    Megaphone, GraduationCap, Layout
+    Megaphone, GraduationCap, Layout, Brain
 } from 'lucide-react';
-import { type TeacherDashboardData } from '../types'; // Import type from types
-import { getTeacherDashboard } from '../services/teacherDashboardService'; // Import service from new file
+import { type TeacherDashboardData } from '../types';
+import { getTeacherDashboard } from '../services/teacherDashboardService';
 import { generateFeedbackDraft, summarizeClassPerformance } from '../services/ai/geminiService';
 import { format } from 'date-fns';
 
@@ -19,6 +19,7 @@ const TeacherDashboard: React.FC = () => {
     const [data, setData] = useState<TeacherDashboardData | null>(null);
     const [activeTab, setActiveTab] = useState<'active' | 'grading'>('active');
     const [aiLoading, setAiLoading] = useState<string | null>(null);
+    const [aiModal, setAiModal] = useState<{ isOpen: boolean; title: string; content: string }>({ isOpen: false, title: '', content: '' });
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -41,21 +42,22 @@ const TeacherDashboard: React.FC = () => {
 
     const handleAiAction = async (action: 'feedback' | 'summary') => {
         setAiLoading(action);
-        if (action === 'feedback') {
-            const result = await generateFeedbackDraft("Recent Quiz", "Low Scores");
-            alert("AI Drafted Feedback:\n\n" + result); // Simple alert for MVP
-        } else if (action === 'summary') {
-            const result = await summarizeClassPerformance("Midterm Exam", 72, 5);
-            alert("AI Performance Summary:\n\n" + result);
+        try {
+            if (action === 'feedback') {
+                const result = await generateFeedbackDraft("Recent Quiz", "Low Scores");
+                setAiModal({ isOpen: true, title: "AI Drafted Feedback", content: result });
+            } else if (action === 'summary') {
+                const result = await summarizeClassPerformance("Midterm Exam", 72, 5);
+                setAiModal({ isOpen: true, title: "AI Performance Summary", content: result });
+            }
+        } catch (e) {
+            setAiModal({ isOpen: true, title: "Error", content: "Failed to generate AI response. Please try again." });
         }
         setAiLoading(null);
     };
 
-    if (loading) {
-        return <div className="p-8 text-center text-slate-400">Loading Command Center...</div>;
-    }
-
-    if (!data) return null;
+    if (loading) return <DashboardSkeleton />;
+    if (!data) return <div className="p-8 text-center text-slate-400">Unable to load dashboard. Please try again.</div>;
 
     return (
         <div className="max-w-7xl mx-auto p-6 space-y-8">
@@ -361,6 +363,19 @@ const TeacherDashboard: React.FC = () => {
                 </div>
             </div>
 
+            {/* AI Result Modal */}
+            <Modal isOpen={aiModal.isOpen} onClose={() => setAiModal(prev => ({ ...prev, isOpen: false }))} title={aiModal.title}>
+                <div className="max-h-96 overflow-y-auto">
+                    <pre className="text-slate-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
+                        {aiModal.content}
+                    </pre>
+                </div>
+                <div className="mt-4 flex justify-end">
+                    <Button onClick={() => setAiModal(prev => ({ ...prev, isOpen: false }))}>
+                        Close
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 };

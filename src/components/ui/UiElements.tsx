@@ -157,3 +157,173 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className
         {children}
     </div>
 );
+
+// Skeleton Component for Loading States
+interface SkeletonProps {
+    className?: string;
+    variant?: 'text' | 'card' | 'circle';
+    width?: string;
+    height?: string;
+}
+export const Skeleton: React.FC<SkeletonProps> = ({ className = '', variant = 'text', width, height }) => {
+    const baseClasses = 'animate-pulse bg-slate-700/50 rounded';
+    const variantClasses = {
+        text: 'h-4 rounded',
+        card: 'rounded-lg',
+        circle: 'rounded-full'
+    };
+
+    return (
+        <div
+            className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+            style={{ width, height }}
+        />
+    );
+};
+
+// Dashboard Skeleton - Complete loading state for dashboards
+export const DashboardSkeleton: React.FC = () => (
+    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6 animate-in fade-in duration-300">
+        {/* Header Skeleton */}
+        <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-slate-800 rounded-lg p-4 ring-1 ring-slate-700/50">
+                    <Skeleton className="h-4 w-20 mb-2" />
+                    <Skeleton className="h-8 w-12" />
+                </div>
+            ))}
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+                <div className="bg-slate-800 rounded-lg p-5 ring-1 ring-slate-700/50">
+                    <Skeleton className="h-5 w-32 mb-4" />
+                    <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="flex gap-4 p-3 bg-slate-900/50 rounded-lg">
+                                <Skeleton variant="circle" className="w-10 h-10" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-48" />
+                                    <Skeleton className="h-3 w-32" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            <div className="space-y-4">
+                <div className="bg-slate-800 rounded-lg p-5 ring-1 ring-slate-700/50">
+                    <Skeleton className="h-5 w-24 mb-4" />
+                    <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// Toast Notification Component
+interface ToastProps {
+    message: string;
+    type?: 'success' | 'error' | 'info';
+    isVisible: boolean;
+    onClose: () => void;
+}
+
+export const Toast: React.FC<ToastProps> = ({ message, type = 'info', isVisible, onClose }) => {
+    React.useEffect(() => {
+        if (isVisible) {
+            const timer = setTimeout(onClose, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible, onClose]);
+
+    if (!isVisible) return null;
+
+    const bgColors = {
+        success: 'bg-emerald-600',
+        error: 'bg-red-600',
+        info: 'bg-violet-600'
+    };
+
+    const icons = {
+        success: <Check size={20} />,
+        error: <X size={20} />,
+        info: <span className="text-lg">ℹ️</span>
+    };
+
+    return (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+            <div className={`${bgColors[type]} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px] max-w-lg`}>
+                <span className="flex-shrink-0">{icons[type]}</span>
+                <p className="flex-1 text-sm font-medium">{message}</p>
+                <button
+                    onClick={onClose}
+                    className="flex-shrink-0 p-1 hover:bg-white/20 rounded transition-colors"
+                >
+                    <X size={16} />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Toast Context for global toast notifications
+interface ToastContextType {
+    showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+}
+
+const ToastContext = React.createContext<ToastContextType | null>(null);
+
+export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; visible: boolean }>({
+        message: '',
+        type: 'info',
+        visible: false
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type, visible: true });
+    };
+
+    const hideToast = () => {
+        setToast(prev => ({ ...prev, visible: false }));
+    };
+
+    return (
+        <ToastContext.Provider value={{ showToast }}>
+            {children}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.visible}
+                onClose={hideToast}
+            />
+        </ToastContext.Provider>
+    );
+};
+
+export const useToast = (): ToastContextType => {
+    const context = React.useContext(ToastContext);
+    if (!context) {
+        // Fallback for when used outside provider
+        return {
+            showToast: (message: string, type?: 'success' | 'error' | 'info') => {
+                console.log(`Toast (${type}): ${message}`);
+            }
+        };
+    }
+    return context;
+};
+
+

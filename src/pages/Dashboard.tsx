@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Card, Button, ScrollReveal } from '../components/ui';
+import { PageHeader, Card, Button, ScrollReveal, DashboardSkeleton } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Layout, Brain, Trophy, Calendar, Clock, ArrowRight,
@@ -32,7 +32,6 @@ const Dashboard: React.FC = () => {
 
                 if (result) {
                     // Fetch AI Insight based on real stats
-                    // Only fetch if not already present or refresh needed (simple implementation for MVP)
                     try {
                         const aiInsight = await getDashboardInsights({
                             streak: result.stats.streak,
@@ -40,7 +39,7 @@ const Dashboard: React.FC = () => {
                             tasksCount: result.stats.tasksCount,
                             recentTaskTitle: result.today[0]?.title
                         });
-                        result.insight = aiInsight; // Override default backend mock
+                        result.insight = aiInsight;
                     } catch (e) { console.warn("AI Insight failed, using fallback"); }
 
                     setData(result);
@@ -64,7 +63,6 @@ const Dashboard: React.FC = () => {
         if (result.success) {
             setShowJoinModal(false);
             setJoinCode('');
-            // Refresh enrolled courses
             const courses = await getEnrolledCourses();
             setEnrolledCourses(courses);
         } else {
@@ -73,8 +71,8 @@ const Dashboard: React.FC = () => {
         setJoinLoading(false);
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-400">Loading your space...</div>;
-    if (!data) return null;
+    if (loading) return <DashboardSkeleton />;
+    if (!data) return <div className="p-8 text-center text-slate-400">Unable to load dashboard. Please try again.</div>;
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6">
